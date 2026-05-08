@@ -107,6 +107,108 @@ tr:hover td { background:#1a1a1a; }
 }
 .tab:hover { color:#aaa; }
 .tab.active { color:#e8c547; border-bottom-color:#e8c547; }
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    nav {
+        padding: 0 16px;
+        flex-wrap: wrap;
+        height: auto;
+        padding: 12px 16px;
+    }
+    .logo {
+        font-size: 1.4rem;
+    }
+    .nav-links {
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+    .nav-links a, .btn {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+    }
+    .hero {
+        padding: 40px 20px;
+    }
+    .hero h1 {
+        font-size: 2rem;
+    }
+    .hero p {
+        font-size: 0.9rem;
+    }
+    .hero-btns {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .stats-bar {
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 16px;
+    }
+    .stat {
+        flex: 1;
+        min-width: 80px;
+    }
+    .categories {
+        padding: 16px;
+        gap: 8px;
+    }
+    .cat-btn {
+        padding: 6px 12px;
+        font-size: 0.7rem;
+    }
+    .section {
+        padding: 24px 16px;
+    }
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+    }
+    .card-body {
+        padding: 8px;
+    }
+    .card-title {
+        font-size: 0.8rem;
+    }
+    .card-sub {
+        font-size: 0.7rem;
+    }
+    .card-price {
+        font-size: 0.75rem;
+    }
+    .section-title {
+        font-size: 1.1rem;
+    }
+    .artist-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+    }
+    .sidebar {
+        display: none;
+    }
+    .layout {
+        grid-template-columns: 1fr;
+    }
+    .main {
+        padding: 16px;
+    }
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .payment-card {
+        padding: 24px;
+        margin: 16px;
+    }
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+    th, td {
+        padding: 8px;
+        font-size: 0.7rem;
+    }
+}
 </style>
 """
 
