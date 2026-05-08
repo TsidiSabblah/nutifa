@@ -1,6 +1,7 @@
 import os
 import sys
 import uuid
+import subprocess
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from flask import Blueprint, render_template_string, request, redirect, url_for, flash
@@ -24,6 +25,23 @@ def save_file(file, subfolder):
     path = os.path.join(UPLOAD_FOLDER, subfolder, filename)
     file.save(path)
     return filename
+
+def generate_preview(audio_path, preview_path, duration=30):
+    """Generate 30-second preview using FFmpeg"""
+    try:
+        cmd = [
+            'ffmpeg', '-i', audio_path,
+            '-t', str(duration),
+            '-acodec', 'mp3',
+            '-ab', '64k',
+            '-y',
+            preview_path
+        ]
+        subprocess.run(cmd, capture_output=True, check=True)
+        return True
+    except Exception as e:
+        print(f"Preview generation failed: {e}")
+        return False
 
 DASH_STYLE = """
 <style>
@@ -107,107 +125,34 @@ tr:hover td { background:#1a1a1a; }
 }
 .tab:hover { color:#aaa; }
 .tab.active { color:#e8c547; border-bottom-color:#e8c547; }
-/* Mobile Responsive */
 @media (max-width: 768px) {
-    nav {
-        padding: 0 16px;
-        flex-wrap: wrap;
-        height: auto;
-        padding: 12px 16px;
-    }
-    .logo {
-        font-size: 1.4rem;
-    }
-    .nav-links {
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 8px;
-    }
-    .nav-links a, .btn {
-        font-size: 0.75rem;
-        padding: 6px 12px;
-    }
-    .hero {
-        padding: 40px 20px;
-    }
-    .hero h1 {
-        font-size: 2rem;
-    }
-    .hero p {
-        font-size: 0.9rem;
-    }
-    .hero-btns {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .stats-bar {
-        flex-wrap: wrap;
-        gap: 16px;
-        padding: 16px;
-    }
-    .stat {
-        flex: 1;
-        min-width: 80px;
-    }
-    .categories {
-        padding: 16px;
-        gap: 8px;
-    }
-    .cat-btn {
-        padding: 6px 12px;
-        font-size: 0.7rem;
-    }
-    .section {
-        padding: 24px 16px;
-    }
-    .grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 12px;
-    }
-    .card-body {
-        padding: 8px;
-    }
-    .card-title {
-        font-size: 0.8rem;
-    }
-    .card-sub {
-        font-size: 0.7rem;
-    }
-    .card-price {
-        font-size: 0.75rem;
-    }
-    .section-title {
-        font-size: 1.1rem;
-    }
-    .artist-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 12px;
-    }
-    .sidebar {
-        display: none;
-    }
-    .layout {
-        grid-template-columns: 1fr;
-    }
-    .main {
-        padding: 16px;
-    }
-    .stats-row {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-    }
-    .payment-card {
-        padding: 24px;
-        margin: 16px;
-    }
-    table {
-        display: block;
-        overflow-x: auto;
-    }
-    th, td {
-        padding: 8px;
-        font-size: 0.7rem;
-    }
+    nav { padding: 0 16px; flex-wrap: wrap; height: auto; padding: 12px 16px; }
+    .logo { font-size: 1.4rem; }
+    .nav-links { gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+    .nav-links a, .btn { font-size: 0.75rem; padding: 6px 12px; }
+    .hero { padding: 40px 20px; }
+    .hero h1 { font-size: 2rem; }
+    .hero p { font-size: 0.9rem; }
+    .hero-btns { flex-direction: column; gap: 10px; }
+    .stats-bar { flex-wrap: wrap; gap: 16px; padding: 16px; }
+    .stat { flex: 1; min-width: 80px; }
+    .categories { padding: 16px; gap: 8px; }
+    .cat-btn { padding: 6px 12px; font-size: 0.7rem; }
+    .section { padding: 24px 16px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .card-body { padding: 8px; }
+    .card-title { font-size: 0.8rem; }
+    .card-sub { font-size: 0.7rem; }
+    .card-price { font-size: 0.75rem; }
+    .section-title { font-size: 1.1rem; }
+    .artist-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    .sidebar { display: none; }
+    .layout { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .payment-card { padding: 24px; margin: 16px; }
+    table { display: block; overflow-x: auto; }
+    th, td { padding: 8px; font-size: 0.7rem; }
 }
 </style>
 """
@@ -219,7 +164,6 @@ def get_artist_profile(user_id):
     ).fetchone()
     conn.close()
     return profile
-
 
 # ── Dashboard Home ─────────────────────────────────────────────────────────────
 @artist_bp.route("/dashboard")
@@ -288,14 +232,12 @@ def dashboard():
         <div class="main">
             <div class="page-title">Welcome back, {{ profile['stage_name'] }} 🎤</div>
             <div class="page-sub">Here's how your music is performing</div>
-
             {% if not profile['is_verified'] %}
             <div class="flash">
                 ⏳ Your artist account is pending approval from Nutifa admin.
                 You can upload music but it won't be visible until approved.
             </div>
             {% endif %}
-
             <div class="stats-row">
                 <div class="stat-card">
                     <div class="num">{{ track_count }}</div>
@@ -314,26 +256,24 @@ def dashboard():
                     <div class="label">Platform Cut</div>
                 </div>
             </div>
-
             <div class="section">
                 <div class="section-title">Recent Sales</div>
                 {% if recent_orders %}
                 <table>
-                    <tr>
-                        <th>Item</th><th>Amount</th>
-                        <th>You Earn</th><th>Date</th><th>Status</th>
-                    </tr>
+                    <thead>
+                        <tr><th>Item</th><th>Amount</th><th>You Earn</th><th>Date</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
                     {% for o in recent_orders %}
-                    <tr>
-                        <td>{{ o['track_title'] or o['item_type'] }}</td>
-                        <td>GHS {{ "%.2f"|format(o['amount']) }}</td>
-                        <td>GHS {{ "%.2f"|format(o['artist_earnings']) }}</td>
-                        <td>{{ o['created_at'][:10] }}</td>
-                        <td>
-                            <span class="badge badge-green">{{ o['status'] }}</span>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td>{{ o['track_title'] or o['item_type'] }}</td>
+                            <td>GHS {{ "%.2f"|format(o['amount']) }}</td>
+                            <td>GHS {{ "%.2f"|format(o['artist_earnings']) }}</td>
+                            <td>{{ o['created_at'][:10] }}</td>
+                            <td><span class="badge badge-green">{{ o['status'] }}</span></td>
+                        </tr>
                     {% endfor %}
+                    </tbody>
                 </table>
                 {% else %}
                 <div class="empty">
@@ -350,7 +290,6 @@ def dashboard():
     """, profile=profile, track_count=track_count,
          total_sales=total_sales, total_earned=total_earned,
          recent_orders=recent_orders)
-
 
 # ── Upload Music ───────────────────────────────────────────────────────────────
 @artist_bp.route("/upload", methods=["GET", "POST"])
@@ -383,6 +322,13 @@ def upload():
         else:
             try:
                 audio_filename = save_file(audio_file, "music")
+                full_audio_path = os.path.join(UPLOAD_FOLDER, "music", audio_filename)
+
+                # Generate 30-second preview
+                preview_filename = f"preview_{audio_filename}"
+                preview_path = os.path.join(UPLOAD_FOLDER, "music", preview_filename)
+                generate_preview(full_audio_path, preview_path, duration=30)
+
                 cover_filename = ""
                 if cover_file and cover_file.filename and allowed_file(cover_file.filename, ALLOWED_IMAGE):
                     cover_filename = save_file(cover_file, "music")
@@ -390,13 +336,13 @@ def upload():
                 conn = get_db()
                 conn.execute("""
                     INSERT INTO tracks
-                    (artist_id, title, file_path, cover_image, track_type, price, currency, is_published)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-                """, (profile['id'], title, audio_filename, cover_filename,
+                    (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                """, (profile['id'], title, audio_filename, preview_filename, cover_filename,
                       track_type, float(price), currency))
                 conn.commit()
                 conn.close()
-                success = f"'{title}' uploaded successfully!"
+                success = f"'{title}' uploaded successfully with preview!"
             except Exception as e:
                 error = f"Upload failed: {e}"
 
@@ -434,10 +380,8 @@ def upload():
         <div class="main">
             <div class="page-title">Upload Music 📤</div>
             <div class="page-sub">Upload your tracks, beats and instrumentals</div>
-
             {% if error %}<div class="flash">{{ error }}</div>{% endif %}
             {% if success %}<div class="flash success">✅ {{ success }}</div>{% endif %}
-
             <div class="section">
                 <div class="section-title">Track Details</div>
                 <form method="POST" enctype="multipart/form-data">
@@ -457,8 +401,7 @@ def upload():
                     <div class="form-row">
                         <div class="form-group">
                             <label>Price *</label>
-                            <input type="number" name="price" placeholder="0.00"
-                                   min="0" step="0.01" value="0">
+                            <input type="number" name="price" placeholder="0.00" min="0" step="0.01" value="0">
                         </div>
                         <div class="form-group">
                             <label>Currency</label>
@@ -471,13 +414,11 @@ def upload():
                     </div>
                     <div class="form-group">
                         <label>Audio File * (MP3, WAV, OGG, M4A)</label>
-                        <input type="file" name="audio_file"
-                               accept=".mp3,.wav,.ogg,.m4a" required>
+                        <input type="file" name="audio_file" accept=".mp3,.wav,.ogg,.m4a" required>
                     </div>
                     <div class="form-group">
                         <label>Cover Image (JPG, PNG — optional)</label>
-                        <input type="file" name="cover_image"
-                               accept=".jpg,.jpeg,.png,.webp">
+                        <input type="file" name="cover_image" accept=".jpg,.jpeg,.png,.webp">
                     </div>
                     <button type="submit" class="btn btn-gold">📤 Upload Track</button>
                 </form>
@@ -486,7 +427,6 @@ def upload():
     </div>
     </body></html>
     """, error=error, success=success, profile=profile)
-
 
 # ── My Tracks ─────────────────────────────────────────────────────────────────
 @artist_bp.route("/tracks")
@@ -542,31 +482,20 @@ def tracks():
             <div class="section">
                 {% if my_tracks %}
                 <table>
-                    <tr>
-                        <th>Title</th><th>Type</th><th>Price</th>
-                        <th>Downloads</th><th>Status</th>
-                    </tr>
+                    <thead>
+                        <tr><th>Title</th><th>Type</th><th>Price</th><th>Downloads</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
                     {% for t in my_tracks %}
-                    <tr>
-                        <td>{{ t['title'] }}</td>
-                        <td>{{ t['track_type'] }}</td>
-                        <td>
-                            {% if t['price'] == 0 %}
-                                <span style="color:#47e860">FREE</span>
-                            {% else %}
-                                {{ t['currency'] }} {{ "%.2f"|format(t['price']) }}
-                            {% endif %}
-                        </td>
-                        <td>{{ t['downloads'] }}</td>
-                        <td>
-                            {% if t['is_published'] %}
-                                <span class="badge badge-green">Published</span>
-                            {% else %}
-                                <span class="badge badge-yellow">Draft</span>
-                            {% endif %}
-                        </td>
-                    </tr>
+                        <tr>
+                            <td>{{ t['title'] }}</td>
+                            <td>{{ t['track_type'] }}</td>
+                            <td>{% if t['price'] == 0 %}<span style="color:#47e860">FREE</span>{% else %}{{ t['currency'] }} {{ "%.2f"|format(t['price']) }}{% endif %}</td>
+                            <td>{{ t['downloads'] }}</td>
+                            <td>{% if t['is_published'] %}<span class="badge badge-green">Published</span>{% else %}<span class="badge badge-yellow">Draft</span>{% endif %}</td>
+                        </tr>
                     {% endfor %}
+                    </tbody>
                 </table>
                 {% else %}
                 <div class="empty">
@@ -581,7 +510,6 @@ def tracks():
     </div>
     </body></html>
     """, my_tracks=my_tracks, profile=profile)
-
 
 # ── Artist Setup (first time) ─────────────────────────────────────────────────
 @artist_bp.route("/setup", methods=["GET", "POST"])
@@ -607,12 +535,9 @@ def setup():
     <!DOCTYPE html><html><head><title>Artist Setup — Nutifa</title></head><body>
     <nav><a href="/" class="logo">NUTIFA.</a></nav>
     <div style="display:flex;align-items:center;justify-content:center;min-height:80vh">
-        <div style="background:#141414;border:1px solid #1e1e1e;border-radius:16px;
-                    padding:40px;width:100%;max-width:420px">
+        <div style="background:#141414;border:1px solid #1e1e1e;border-radius:16px;padding:40px;width:100%;max-width:420px">
             <h2 style="color:#e8c547;margin-bottom:8px">Complete Artist Profile 🎤</h2>
-            <p style="color:#555;font-size:0.85rem;margin-bottom:24px">
-                Tell us about yourself
-            </p>
+            <p style="color:#555;font-size:0.85rem;margin-bottom:24px">Tell us about yourself</p>
             {% if error %}<div class="flash">{{ error }}</div>{% endif %}
             <form method="POST">
                 <div class="form-group">
@@ -636,9 +561,7 @@ def setup():
                         <option>Other</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-gold" style="width:100%">
-                    Complete Setup →
-                </button>
+                <button type="submit" class="btn btn-gold" style="width:100%">Complete Setup →</button>
             </form>
         </div>
     </div>
