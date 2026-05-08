@@ -1,7 +1,13 @@
 import sqlite3
 import os
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "nutifa.db")
+# Use a writable directory on Render
+if os.environ.get('RENDER'):
+    # On Render, use /tmp for database (writable)
+    DB_PATH = '/tmp/nutifa.db'
+else:
+    # Local development
+    DB_PATH = os.path.join(os.path.dirname(__file__), "nutifa.db")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -170,7 +176,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Database ready!")
+    print("Database ready at:", DB_PATH)
 
 def seed_admin(email, username, password):
     from werkzeug.security import generate_password_hash

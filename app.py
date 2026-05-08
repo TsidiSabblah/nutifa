@@ -15,6 +15,14 @@ from core.artist import artist_bp
 from core.admin import admin_bp
 from core.payment import payment_bp
 
+import os
+# Ensure database directory exists on Render
+if os.environ.get('RENDER'):
+    import sqlite3
+    # Just to create the file
+    conn = sqlite3.connect('/tmp/nutifa.db')
+    conn.close()
+
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.getenv("SECRET_KEY", "nutifa-dev-secret-2024")
