@@ -1,21 +1,13 @@
-import os
 import sqlite3
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import os
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "nutifa.db")
-USE_POSTGRES = os.environ.get("DATABASE_URL") is not None
 
 def get_db():
-    if USE_POSTGRES:
-        conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
-        conn.row_factory = RealDictCursor
-        return conn
-    else:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        return conn
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
 def init_db():
     conn = get_db()
