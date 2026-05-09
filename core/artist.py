@@ -187,6 +187,14 @@ def dashboard():
         "SELECT COALESCE(SUM(artist_earnings),0) FROM orders WHERE artist_id=? AND status='paid'",
         (profile['id'],)
     ).fetchone()[0]
+    
+    # Calculate available balance for payout
+    total_paid = conn.execute(
+        "SELECT COALESCE(SUM(amount),0) FROM payouts WHERE artist_id=? AND status='paid'",
+        (profile['id'],)
+    ).fetchone()[0]
+    available_balance = total_earned - total_paid
+    
     recent_orders = conn.execute("""
         SELECT o.*, t.title as track_title
         FROM orders o
@@ -215,6 +223,9 @@ def dashboard():
             </a>
             <a href="/artist/tracks" class="sidebar-item">
                 <span class="icon">🎵</span>My Tracks
+            </a>
+            <a href="/artist/request-payout" class="sidebar-item">
+                <span class="icon">💰</span>Request Payout
             </a>
             <a href="/artist/merch" class="sidebar-item">
                 <span class="icon">👕</span>Merchandise
@@ -252,8 +263,8 @@ def dashboard():
                     <div class="label">Total Earned</div>
                 </div>
                 <div class="stat-card">
-                    <div class="num">15%</div>
-                    <div class="label">Platform Cut</div>
+                    <div class="num">GHS {{ "%.2f"|format(available_balance) }}</div>
+                    <div class="label">Available Balance</div>
                 </div>
             </div>
             <div class="section">
@@ -289,7 +300,7 @@ def dashboard():
     </body></html>
     """, profile=profile, track_count=track_count,
          total_sales=total_sales, total_earned=total_earned,
-         recent_orders=recent_orders)
+         available_balance=available_balance, recent_orders=recent_orders)
 
 # ── Upload Music ───────────────────────────────────────────────────────────────
 @artist_bp.route("/upload", methods=["GET", "POST"])
@@ -366,6 +377,9 @@ def upload():
             </a>
             <a href="/artist/tracks" class="sidebar-item">
                 <span class="icon">🎵</span>My Tracks
+            </a>
+            <a href="/artist/request-payout" class="sidebar-item">
+                <span class="icon">💰</span>Request Payout
             </a>
             <a href="/artist/merch" class="sidebar-item">
                 <span class="icon">👕</span>Merchandise
@@ -463,6 +477,9 @@ def tracks():
             <a href="/artist/tracks" class="sidebar-item active">
                 <span class="icon">🎵</span>My Tracks
             </a>
+            <a href="/artist/request-payout" class="sidebar-item">
+                <span class="icon">💰</span>Request Payout
+            </a>
             <a href="/artist/merch" class="sidebar-item">
                 <span class="icon">👕</span>Merchandise
             </a>
@@ -510,6 +527,175 @@ def tracks():
     </div>
     </body></html>
     """, my_tracks=my_tracks, profile=profile)
+
+# ── Request Payout ────────────────────────────────────────────────────────────
+@artist_bp.route("/request-payout", methods=["GET", "POST"])
+@login_required
+def request_payout():
+    if current_user.role not in ('artist', 'admin'):
+        return redirect('/store')
+    
+    profile = get_artist_profile(current_user.id)
+    if not profile:
+        return redirect('/artist/setup')
+    
+    conn = get_db()
+    
+    # Calculate available balance
+    total_earned = conn.execute(
+        "SELECT COALESCE(SUM(artist_earnings),0) FROM orders WHERE artist_id=? AND status='paid'",
+        (profile['id'],)
+    ).fetchone()[0]
+    
+    total_paid = conn.execute(
+        "SELECT COALESCE(SUM(amount),0) FROM payouts WHERE artist_id=? AND status='paid'",
+        (profile['id'],)
+    ).fetchone()[0]
+    
+    balance = total_earned - total_paid
+    
+    # Get payout history
+    payout_history = conn.execute("""
+        SELECT * FROM payouts WHERE artist_id=? ORDER BY created_at DESC
+    """, (profile['id'],)).fetchall()
+    
+    error = ""
+    success = ""
+    
+    if request.method == "POST":
+        amount = float(request.form.get("amount", 0))
+        method = request.form.get("method", "mobile_money")
+        phone = request.form.get("phone", "")
+        
+        if amount <= 0:
+            error = "Please enter a valid amount"
+        elif amount < 10:
+            error = "Minimum withdrawal amount is GHS 10.00"
+        elif amount > balance:
+            error = f"Request amount exceeds your balance of GHS {balance:.2f}"
+        elif not phone and method == "mobile_money":
+            error = "Please enter your mobile money number"
+        else:
+            conn.execute("""
+                INSERT INTO payouts (artist_id, amount, currency, method, reference, status, payout_details)
+                VALUES (?, ?, 'GHS', ?, ?, 'pending', ?)
+            """, (profile['id'], amount, method, f"PAY-{uuid.uuid4().hex[:8]}", phone))
+            conn.commit()
+            success = f"Payout request of GHS {amount:.2f} submitted for approval!"
+    
+    conn.close()
+    
+    return render_template_string(DASH_STYLE + """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Request Payout — Nutifa</title>
+    </head>
+    <body>
+        <nav>
+            <a href="/" class="logo">NUTIFA.</a>
+            <div class="nav-links">
+                <a href="/store">Store</a>
+                <a href="/artist/dashboard">Dashboard</a>
+                <a href="/logout" class="btn btn-outline">Log Out</a>
+            </div>
+        </nav>
+        <div class="layout">
+            <div class="sidebar">
+                <a href="/artist/dashboard" class="sidebar-item">
+                    <span class="icon">📊</span>Dashboard
+                </a>
+                <a href="/artist/upload" class="sidebar-item">
+                    <span class="icon">📤</span>Upload Music
+                </a>
+                <a href="/artist/tracks" class="sidebar-item">
+                    <span class="icon">🎵</span>My Tracks
+                </a>
+                <a href="/artist/request-payout" class="sidebar-item active">
+                    <span class="icon">💰</span>Request Payout
+                </a>
+                <a href="/artist/merch" class="sidebar-item">
+                    <span class="icon">👕</span>Merchandise
+                </a>
+                <a href="/artist/sales" class="sidebar-item">
+                    <span class="icon">💰</span>Sales
+                </a>
+                <a href="/artist/profile" class="sidebar-item">
+                    <span class="icon">👤</span>My Profile
+                </a>
+                <a href="/store" class="sidebar-item">
+                    <span class="icon">🏪</span>Visit Store
+                </a>
+            </div>
+            <div class="main">
+                <div class="page-title">Request Payout 💰</div>
+                <div class="page-sub">Withdraw your earnings</div>
+                
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="num">GHS {{ "%.2f"|format(balance) }}</div>
+                        <div class="label">Available Balance</div>
+                    </div>
+                </div>
+                
+                {% if error %}<div class="flash">{{ error }}</div>{% endif %}
+                {% if success %}<div class="flash success">✅ {{ success }}</div>{% endif %}
+                
+                <div class="section">
+                    <div class="section-title">Withdrawal Request</div>
+                    <form method="POST">
+                        <div class="form-group">
+                            <label>Amount (GHS) *</label>
+                            <input type="number" name="amount" min="10" max="{{ balance }}" step="1" required>
+                            <small style="color:#555">Minimum withdrawal: GHS 10.00</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Payment Method *</label>
+                            <select name="method">
+                                <option value="mobile_money">📱 Mobile Money (MTN/Vodafone/AirtelTigo)</option>
+                                <option value="bank">🏦 Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mobile Money Number / Bank Account</label>
+                            <input type="text" name="phone" placeholder="e.g., 024XXXXXXX">
+                        </div>
+                        <button type="submit" class="btn btn-gold">Submit Request</button>
+                    </form>
+                </div>
+                
+                {% if payout_history %}
+                <div class="section">
+                    <div class="section-title">Payout History</div>
+                    <table>
+                        <thead>
+                            <tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for p in payout_history %}
+                            <tr>
+                                <td>{{ p['created_at'][:10] }}</td>
+                                <td>GHS {{ "%.2f"|format(p['amount']) }}</td>
+                                <td>{{ p['method'] }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if p['status'] == 'paid' %}badge-green
+                                        {% elif p['status'] == 'pending' %}badge-yellow
+                                        {% else %}badge-red{% endif %}">
+                                        {{ p['status'] }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </body>
+    </html>
+    """, profile=profile, balance=balance, payout_history=payout_history)
 
 # ── Artist Setup (first time) ─────────────────────────────────────────────────
 @artist_bp.route("/setup", methods=["GET", "POST"])
