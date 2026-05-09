@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from flask import Blueprint, render_template_string, request, redirect
+from flask import Blueprint, render_template_string, request, redirect, flash
 from flask_login import login_required, current_user
 from database.schema import get_db
 
@@ -88,107 +88,34 @@ input, select {
     transition:border 0.2s; width:100%;
 }
 input:focus, select:focus { border-color:#e8c547; }
-/* Mobile Responsive */
 @media (max-width: 768px) {
-    nav {
-        padding: 0 16px;
-        flex-wrap: wrap;
-        height: auto;
-        padding: 12px 16px;
-    }
-    .logo {
-        font-size: 1.4rem;
-    }
-    .nav-links {
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 8px;
-    }
-    .nav-links a, .btn {
-        font-size: 0.75rem;
-        padding: 6px 12px;
-    }
-    .hero {
-        padding: 40px 20px;
-    }
-    .hero h1 {
-        font-size: 2rem;
-    }
-    .hero p {
-        font-size: 0.9rem;
-    }
-    .hero-btns {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .stats-bar {
-        flex-wrap: wrap;
-        gap: 16px;
-        padding: 16px;
-    }
-    .stat {
-        flex: 1;
-        min-width: 80px;
-    }
-    .categories {
-        padding: 16px;
-        gap: 8px;
-    }
-    .cat-btn {
-        padding: 6px 12px;
-        font-size: 0.7rem;
-    }
-    .section {
-        padding: 24px 16px;
-    }
-    .grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 12px;
-    }
-    .card-body {
-        padding: 8px;
-    }
-    .card-title {
-        font-size: 0.8rem;
-    }
-    .card-sub {
-        font-size: 0.7rem;
-    }
-    .card-price {
-        font-size: 0.75rem;
-    }
-    .section-title {
-        font-size: 1.1rem;
-    }
-    .artist-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 12px;
-    }
-    .sidebar {
-        display: none;
-    }
-    .layout {
-        grid-template-columns: 1fr;
-    }
-    .main {
-        padding: 16px;
-    }
-    .stats-row {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-    }
-    .payment-card {
-        padding: 24px;
-        margin: 16px;
-    }
-    table {
-        display: block;
-        overflow-x: auto;
-    }
-    th, td {
-        padding: 8px;
-        font-size: 0.7rem;
-    }
+    nav { padding: 0 16px; flex-wrap: wrap; height: auto; padding: 12px 16px; }
+    .logo { font-size: 1.4rem; }
+    .nav-links { gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+    .nav-links a, .btn { font-size: 0.75rem; padding: 6px 12px; }
+    .hero { padding: 40px 20px; }
+    .hero h1 { font-size: 2rem; }
+    .hero p { font-size: 0.9rem; }
+    .hero-btns { flex-direction: column; gap: 10px; }
+    .stats-bar { flex-wrap: wrap; gap: 16px; padding: 16px; }
+    .stat { flex: 1; min-width: 80px; }
+    .categories { padding: 16px; gap: 8px; }
+    .cat-btn { padding: 6px 12px; font-size: 0.7rem; }
+    .section { padding: 24px 16px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+    .card-body { padding: 8px; }
+    .card-title { font-size: 0.8rem; }
+    .card-sub { font-size: 0.7rem; }
+    .card-price { font-size: 0.75rem; }
+    .section-title { font-size: 1.1rem; }
+    .artist-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    .sidebar { display: none; }
+    .layout { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .payment-card { padding: 24px; margin: 16px; }
+    table { display: block; overflow-x: auto; }
+    th, td { padding: 8px; font-size: 0.7rem; }
 }
 </style>
 """
@@ -216,6 +143,8 @@ def home():
     total_sales    = conn.execute("SELECT COUNT(*) FROM orders WHERE status='paid'").fetchone()[0]
     total_revenue  = conn.execute("SELECT COALESCE(SUM(amount),0) FROM orders WHERE status='paid'").fetchone()[0]
     platform_cut   = conn.execute("SELECT COALESCE(SUM(platform_cut),0) FROM orders WHERE status='paid'").fetchone()[0]
+    
+    pending_payouts = conn.execute("SELECT COUNT(*) FROM payouts WHERE status='pending'").fetchone()[0]
 
     recent_orders = conn.execute("""
         SELECT o.*, u.username as buyer_name
@@ -259,6 +188,9 @@ def home():
             <a href="/admin/orders" class="sidebar-item">
                 <span class="icon">💰</span>All Orders
             </a>
+            <a href="/admin/payouts" class="sidebar-item">
+                <span class="icon">💸</span>Payouts
+            </a>
             <div class="sidebar-section">Settings</div>
             <a href="/admin/settings" class="sidebar-item">
                 <span class="icon">⚙️</span>Settings
@@ -300,6 +232,13 @@ def home():
                 <a href="/admin/artists" style="color:#e8c547">Review now →</a>
             </div>
             {% endif %}
+            
+            {% if pending_payouts > 0 %}
+            <div class="flash" style="background:#1a2a1a;border-color:#47e86030;color:#47e860">
+                💸 {{ pending_payouts }} payout request(s) pending —
+                <a href="/admin/payouts" style="color:#47e860">Review now →</a>
+            </div>
+            {% endif %}
 
             <div class="section">
                 <div class="section-header">
@@ -308,33 +247,24 @@ def home():
                 </div>
                 {% if recent_orders %}
                 <table>
-                    <tr>
-                        <th>Buyer</th><th>Item</th><th>Amount</th>
-                        <th>Platform Cut</th><th>Method</th><th>Status</th>
-                    </tr>
+                    <thead>
+                        <tr><th>Buyer</th><th>Item</th><th>Amount</th><th>Platform Cut</th><th>Method</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
                     {% for o in recent_orders %}
-                    <tr>
-                        <td>{{ o['buyer_name'] or o['buyer_email'] }}</td>
-                        <td>{{ o['item_type'] }} #{{ o['item_id'] }}</td>
-                        <td>GHS {{ "%.2f"|format(o['amount']) }}</td>
-                        <td>GHS {{ "%.2f"|format(o['platform_cut']) }}</td>
-                        <td>{{ o['payment_method'] or '—' }}</td>
-                        <td>
-                            <span class="badge
-                                {% if o['status']=='paid' %}badge-green
-                                {% elif o['status']=='pending' %}badge-yellow
-                                {% else %}badge-red{% endif %}">
-                                {{ o['status'] }}
-                            </span>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td>{{ o['buyer_name'] or o['buyer_email'] }}</td>
+                            <td>{{ o['item_type'] }} #{{ o['item_id'] }}</td>
+                            <td>GHS {{ "%.2f"|format(o['amount']) }}</td>
+                            <td>GHS {{ "%.2f"|format(o['platform_cut']) }}</td>
+                            <td>{{ o['payment_method'] or '—' }}</td>
+                            <td><span class="badge {% if o['status']=='paid' %}badge-green{% elif o['status']=='pending' %}badge-yellow{% else %}badge-red{% endif %}">{{ o['status'] }}</span></td>
+                        </tr>
                     {% endfor %}
+                    </tbody>
                 </table>
                 {% else %}
-                <div class="empty">
-                    <div class="icon">💰</div>
-                    <p>No orders yet</p>
-                </div>
+                <div class="empty"><div class="icon">💰</div><p>No orders yet</p></div>
                 {% endif %}
             </div>
 
@@ -344,34 +274,24 @@ def home():
                     <a href="/admin/users" class="btn btn-outline btn-sm">See All</a>
                 </div>
                 <table>
-                    <tr>
-                        <th>#</th><th>Name</th><th>Email</th>
-                        <th>Username</th><th>Role</th><th>Joined</th>
-                    </tr>
+                    <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Username</th><th>Role</th><th>Joined</th></tr></thead>
+                    <tbody>
                     {% for u in recent_users %}
                     <tr>
-                        <td>{{ u['id'] }}</td>
-                        <td>{{ u['full_name'] or '—' }}</td>
-                        <td>{{ u['email'] }}</td>
+                        <td>{{ u['id'] }}</td><td>{{ u['full_name'] or '—' }}</td><td>{{ u['email'] }}</td>
                         <td>@{{ u['username'] }}</td>
-                        <td>
-                            <span class="badge
-                                {% if u['role']=='admin' %}badge-red
-                                {% elif u['role']=='artist' %}badge-yellow
-                                {% else %}badge-blue{% endif %}">
-                                {{ u['role'] }}
-                            </span>
-                        </td>
+                        <td><span class="badge {% if u['role']=='admin' %}badge-red{% elif u['role']=='artist' %}badge-yellow{% else %}badge-blue{% endif %}">{{ u['role'] }}</span></td>
                         <td>{{ u['created_at'][:10] }}</td>
                     </tr>
                     {% endfor %}
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
     </body></html>
     """, total_users=total_users, total_artists=total_artists,
-         pending=pending, total_tracks=total_tracks,
+         pending=pending, pending_payouts=pending_payouts, total_tracks=total_tracks,
          total_sales=total_sales, total_revenue=total_revenue,
          platform_cut=platform_cut, recent_orders=recent_orders,
          recent_users=recent_users)
@@ -393,13 +313,7 @@ def artists():
 
     return render_template_string(ADMIN_STYLE + """
     <!DOCTYPE html><html><head><title>Artists — Nutifa Admin</title></head><body>
-    <nav>
-        <a href="/" class="logo">NUTIFA.</a>
-        <div class="nav-links">
-            <span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span>
-            <a href="/logout" class="btn btn-outline">Log Out</a>
-        </div>
-    </nav>
+    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -409,6 +323,7 @@ def artists():
             <div class="sidebar-section">Content</div>
             <a href="/admin/tracks" class="sidebar-item"><span class="icon">🎵</span>All Tracks</a>
             <a href="/admin/orders" class="sidebar-item"><span class="icon">💰</span>All Orders</a>
+            <a href="/admin/payouts" class="sidebar-item"><span class="icon">💸</span>Payouts</a>
             <div class="sidebar-section">Settings</div>
             <a href="/admin/settings" class="sidebar-item"><span class="icon">⚙️</span>Settings</a>
         </div>
@@ -418,41 +333,19 @@ def artists():
             <div class="section">
                 {% if all_artists %}
                 <table>
-                    <tr>
-                        <th>Stage Name</th><th>Real Name</th><th>Email</th>
-                        <th>Genre</th><th>Status</th><th>Actions</th>
-                    </tr>
+                    <thead><tr><th>Stage Name</th><th>Real Name</th><th>Email</th><th>Genre</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody>
                     {% for a in all_artists %}
                     <tr>
-                        <td><strong>{{ a['stage_name'] }}</strong></td>
-                        <td>{{ a['full_name'] or '—' }}</td>
-                        <td>{{ a['email'] }}</td>
+                        <td><strong>{{ a['stage_name'] }}</strong></td><td>{{ a['full_name'] or '—' }}</td><td>{{ a['email'] }}</td>
                         <td>{{ a['genre'] or '—' }}</td>
-                        <td>
-                            {% if a['is_verified'] %}
-                                <span class="badge badge-green">Approved</span>
-                            {% else %}
-                                <span class="badge badge-yellow">Pending</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if not a['is_verified'] %}
-                            <a href="/admin/artist/approve/{{ a['id'] }}"
-                               class="btn btn-green btn-sm">✓ Approve</a>
-                            {% else %}
-                            <a href="/admin/artist/suspend/{{ a['id'] }}"
-                               class="btn btn-red btn-sm">✗ Suspend</a>
-                            {% endif %}
-                        </td>
+                        <td>{% if a['is_verified'] %}<span class="badge badge-green">Approved</span>{% else %}<span class="badge badge-yellow">Pending</span>{% endif %}</td>
+                        <td>{% if not a['is_verified'] %}<a href="/admin/artist/approve/{{ a['id'] }}" class="btn btn-green btn-sm">✓ Approve</a>{% else %}<a href="/admin/artist/suspend/{{ a['id'] }}" class="btn btn-red btn-sm">✗ Suspend</a>{% endif %}</td>
                     </tr>
                     {% endfor %}
+                    </tbody>
                 </table>
-                {% else %}
-                <div class="empty">
-                    <div class="icon">🎤</div>
-                    <p>No artists yet</p>
-                </div>
-                {% endif %}
+                {% else %}<div class="empty"><div class="icon">🎤</div><p>No artists yet</p></div>{% endif %}
             </div>
         </div>
     </div>
@@ -493,13 +386,7 @@ def users():
 
     return render_template_string(ADMIN_STYLE + """
     <!DOCTYPE html><html><head><title>Users — Nutifa Admin</title></head><body>
-    <nav>
-        <a href="/" class="logo">NUTIFA.</a>
-        <div class="nav-links">
-            <span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span>
-            <a href="/logout" class="btn btn-outline">Log Out</a>
-        </div>
-    </nav>
+    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -509,6 +396,7 @@ def users():
             <div class="sidebar-section">Content</div>
             <a href="/admin/tracks" class="sidebar-item"><span class="icon">🎵</span>All Tracks</a>
             <a href="/admin/orders" class="sidebar-item"><span class="icon">💰</span>All Orders</a>
+            <a href="/admin/payouts" class="sidebar-item"><span class="icon">💸</span>Payouts</a>
             <div class="sidebar-section">Settings</div>
             <a href="/admin/settings" class="sidebar-item"><span class="icon">⚙️</span>Settings</a>
         </div>
@@ -517,43 +405,18 @@ def users():
             <div class="page-sub">All registered users on Nutifa</div>
             <div class="section">
                 <table>
-                    <tr>
-                        <th>#</th><th>Name</th><th>Email</th>
-                        <th>Username</th><th>Role</th>
-                        <th>Status</th><th>Joined</th><th>Action</th>
-                    </tr>
+                    <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Username</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
+                    <tbody>
                     {% for u in all_users %}
                     <tr>
-                        <td>{{ u['id'] }}</td>
-                        <td>{{ u['full_name'] or '—' }}</td>
-                        <td>{{ u['email'] }}</td>
-                        <td>@{{ u['username'] }}</td>
-                        <td>
-                            <span class="badge
-                                {% if u['role']=='admin' %}badge-red
-                                {% elif u['role']=='artist' %}badge-yellow
-                                {% else %}badge-blue{% endif %}">
-                                {{ u['role'] }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if u['is_active'] %}
-                                <span class="badge badge-green">Active</span>
-                            {% else %}
-                                <span class="badge badge-red">Suspended</span>
-                            {% endif %}
-                        </td>
+                        <td>{{ u['id'] }}</td><td>{{ u['full_name'] or '—' }}</td><td>{{ u['email'] }}</td><td>@{{ u['username'] }}</td>
+                        <td><span class="badge {% if u['role']=='admin' %}badge-red{% elif u['role']=='artist' %}badge-yellow{% else %}badge-blue{% endif %}">{{ u['role'] }}</span></td>
+                        <td>{% if u['is_active'] %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-red">Suspended</span>{% endif %}</td>
                         <td>{{ u['created_at'][:10] }}</td>
-                        <td>
-                            {% if u['role'] != 'admin' %}
-                            <a href="/admin/user/toggle/{{ u['id'] }}"
-                               class="btn btn-sm {% if u['is_active'] %}btn-red{% else %}btn-green{% endif %}">
-                               {% if u['is_active'] %}Suspend{% else %}Activate{% endif %}
-                            </a>
-                            {% endif %}
-                        </td>
+                        <td>{% if u['role'] != 'admin' %}<a href="/admin/user/toggle/{{ u['id'] }}" class="btn btn-sm {% if u['is_active'] %}btn-red{% else %}btn-green{% endif %}">{% if u['is_active'] %}Suspend{% else %}Activate{% endif %}</a>{% endif %}</td>
                     </tr>
                     {% endfor %}
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -591,13 +454,7 @@ def tracks():
 
     return render_template_string(ADMIN_STYLE + """
     <!DOCTYPE html><html><head><title>Tracks — Nutifa Admin</title></head><body>
-    <nav>
-        <a href="/" class="logo">NUTIFA.</a>
-        <div class="nav-links">
-            <span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span>
-            <a href="/logout" class="btn btn-outline">Log Out</a>
-        </div>
-    </nav>
+    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -607,6 +464,7 @@ def tracks():
             <div class="sidebar-section">Content</div>
             <a href="/admin/tracks" class="sidebar-item active"><span class="icon">🎵</span>All Tracks</a>
             <a href="/admin/orders" class="sidebar-item"><span class="icon">💰</span>All Orders</a>
+            <a href="/admin/payouts" class="sidebar-item"><span class="icon">💸</span>Payouts</a>
             <div class="sidebar-section">Settings</div>
             <a href="/admin/settings" class="sidebar-item"><span class="icon">⚙️</span>Settings</a>
         </div>
@@ -616,39 +474,20 @@ def tracks():
             <div class="section">
                 {% if all_tracks %}
                 <table>
-                    <tr>
-                        <th>Title</th><th>Artist</th><th>Type</th>
-                        <th>Price</th><th>Downloads</th>
-                        <th>Status</th><th>Uploaded</th>
-                    </tr>
+                    <thead><tr><th>Title</th><th>Artist</th><th>Type</th><th>Price</th><th>Downloads</th><th>Status</th><th>Uploaded</th></tr></thead>
+                    <tbody>
                     {% for t in all_tracks %}
                     <tr>
-                        <td><strong>{{ t['title'] }}</strong></td>
-                        <td>{{ t['stage_name'] }}</td>
-                        <td>{{ t['track_type'] }}</td>
-                        <td>
-                            {% if t['price'] == 0 %}
-                                <span style="color:#47e860">FREE</span>
-                            {% else %}
-                                {{ t['currency'] }} {{ "%.2f"|format(t['price']) }}
-                            {% endif %}
-                        </td>
+                        <td><strong>{{ t['title'] }}</strong></td><td>{{ t['stage_name'] }}</td><td>{{ t['track_type'] }}</td>
+                        <td>{% if t['price'] == 0 %}<span style="color:#47e860">FREE</span>{% else %}{{ t['currency'] }} {{ "%.2f"|format(t['price']) }}{% endif %}</td>
                         <td>{{ t['downloads'] }}</td>
-                        <td>
-                            <span class="badge {% if t['is_published'] %}badge-green{% else %}badge-yellow{% endif %}">
-                                {% if t['is_published'] %}Published{% else %}Draft{% endif %}
-                            </span>
-                        </td>
+                        <td><span class="badge {% if t['is_published'] %}badge-green{% else %}badge-yellow{% endif %}">{% if t['is_published'] %}Published{% else %}Draft{% endif %}</span></td>
                         <td>{{ t['created_at'][:10] }}</td>
                     </tr>
                     {% endfor %}
-                </table>
-                {% else %}
-                <div class="empty">
-                    <div class="icon">🎵</div>
-                    <p>No tracks yet</p>
-                </div>
-                {% endif %}
+                    </tbody>
+                <tr>
+                {% else %}<div class="empty"><div class="icon">🎵</div><p>No tracks yet</p></div>{% endif %}
             </div>
         </div>
     </div>
@@ -676,13 +515,7 @@ def settings():
 
     return render_template_string(ADMIN_STYLE + """
     <!DOCTYPE html><html><head><title>Settings — Nutifa Admin</title></head><body>
-    <nav>
-        <a href="/" class="logo">NUTIFA.</a>
-        <div class="nav-links">
-            <span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span>
-            <a href="/logout" class="btn btn-outline">Log Out</a>
-        </div>
-    </nav>
+    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -692,42 +525,26 @@ def settings():
             <div class="sidebar-section">Content</div>
             <a href="/admin/tracks" class="sidebar-item"><span class="icon">🎵</span>All Tracks</a>
             <a href="/admin/orders" class="sidebar-item"><span class="icon">💰</span>All Orders</a>
+            <a href="/admin/payouts" class="sidebar-item"><span class="icon">💸</span>Payouts</a>
             <div class="sidebar-section">Settings</div>
             <a href="/admin/settings" class="sidebar-item active"><span class="icon">⚙️</span>Settings</a>
         </div>
         <div class="main">
             <div class="page-title">Platform Settings ⚙️</div>
             <div class="page-sub">Configure your Nutifa marketplace</div>
-            {% if success %}
-            <div class="flash success">✅ {{ success }}</div>
-            {% endif %}
+            {% if success %}<div class="flash success">✅ {{ success }}</div>{% endif %}
             <div class="section">
                 <form method="POST">
-                    <div class="form-group">
-                        <label>Platform Name</label>
-                        <input type="text" name="platform_name"
-                               value="{{ settings.get('platform_name','Nutifa') }}">
-                    </div>
-                    <div class="form-group">
-                        <label>Platform Cut % (your earnings per sale)</label>
-                        <input type="number" name="platform_cut_pct" min="0" max="50"
-                               value="{{ settings.get('platform_cut_pct','15') }}">
-                    </div>
-                    <div class="form-group">
-                        <label>Default Currency</label>
-                        <select name="currency_default">
-                            <option {% if settings.get('currency_default')=='GHS' %}selected{% endif %}>GHS</option>
-                            <option {% if settings.get('currency_default')=='USD' %}selected{% endif %}>USD</option>
-                            <option {% if settings.get('currency_default')=='GBP' %}selected{% endif %}>GBP</option>
-                        </select>
-                    </div>
+                    <div class="form-group"><label>Platform Name</label><input type="text" name="platform_name" value="{{ settings.get('platform_name','Nutifa') }}"></div>
+                    <div class="form-group"><label>Platform Cut % (your earnings per sale)</label><input type="number" name="platform_cut_pct" min="0" max="50" value="{{ settings.get('platform_cut_pct','15') }}"></div>
+                    <div class="form-group"><label>Default Currency</label><select name="currency_default"><option {% if settings.get('currency_default')=='GHS' %}selected{% endif %}>GHS</option><option {% if settings.get('currency_default')=='USD' %}selected{% endif %}>USD</option><option {% if settings.get('currency_default')=='GBP' %}selected{% endif %}>GBP</option></select></div>
                     <button type="submit" class="btn btn-gold">Save Settings</button>
                 </form>
             </div>
         </div>
     </div>
     </body></html>
-    """, all_settings=all_settings, settings=all_settings, success=success)
+    """, settings=all_settings, success=success)
 
 
 # ── Orders ─────────────────────────────────────────────────────────────────────
@@ -746,13 +563,7 @@ def orders():
 
     return render_template_string(ADMIN_STYLE + """
     <!DOCTYPE html><html><head><title>Orders — Nutifa Admin</title></head><body>
-    <nav>
-        <a href="/" class="logo">NUTIFA.</a>
-        <div class="nav-links">
-            <span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span>
-            <a href="/logout" class="btn btn-outline">Log Out</a>
-        </div>
-    </nav>
+    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -762,6 +573,7 @@ def orders():
             <div class="sidebar-section">Content</div>
             <a href="/admin/tracks" class="sidebar-item"><span class="icon">🎵</span>All Tracks</a>
             <a href="/admin/orders" class="sidebar-item active"><span class="icon">💰</span>All Orders</a>
+            <a href="/admin/payouts" class="sidebar-item"><span class="icon">💸</span>Payouts</a>
             <div class="sidebar-section">Settings</div>
             <a href="/admin/settings" class="sidebar-item"><span class="icon">⚙️</span>Settings</a>
         </div>
@@ -771,40 +583,154 @@ def orders():
             <div class="section">
                 {% if all_orders %}
                 <table>
-                    <tr>
-                        <th>#</th><th>Buyer</th><th>Item</th><th>Amount</th>
-                        <th>Platform Cut</th><th>Artist Earns</th>
-                        <th>Method</th><th>Status</th><th>Date</th>
-                    </tr>
+                    <thead><tr><th>#</th><th>Buyer</th><th>Item</th><th>Amount</th><th>Platform Cut</th><th>Artist Earns</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
+                    <tbody>
                     {% for o in all_orders %}
                     <tr>
-                        <td>{{ o['id'] }}</td>
-                        <td>{{ o['buyer_name'] or o['buyer_email'] }}</td>
-                        <td>{{ o['item_type'] }}</td>
-                        <td>GHS {{ "%.2f"|format(o['amount']) }}</td>
-                        <td>GHS {{ "%.2f"|format(o['platform_cut']) }}</td>
-                        <td>GHS {{ "%.2f"|format(o['artist_earnings']) }}</td>
+                        <td>{{ o['id'] }}</td><td>{{ o['buyer_name'] or o['buyer_email'] }}</td><td>{{ o['item_type'] }}</td>
+                        <td>GHS {{ "%.2f"|format(o['amount']) }}</td><td>GHS {{ "%.2f"|format(o['platform_cut']) }}</td><td>GHS {{ "%.2f"|format(o['artist_earnings']) }}</td>
                         <td>{{ o['payment_method'] or '—' }}</td>
-                        <td>
-                            <span class="badge
-                                {% if o['status']=='paid' %}badge-green
-                                {% elif o['status']=='pending' %}badge-yellow
-                                {% else %}badge-red{% endif %}">
-                                {{ o['status'] }}
-                            </span>
-                        </td>
+                        <td><span class="badge {% if o['status']=='paid' %}badge-green{% elif o['status']=='pending' %}badge-yellow{% else %}badge-red{% endif %}">{{ o['status'] }}</span></td>
                         <td>{{ o['created_at'][:10] }}</td>
                     </tr>
                     {% endfor %}
+                    </tbody>
                 </table>
-                {% else %}
-                <div class="empty">
-                    <div class="icon">💰</div>
-                    <p>No orders yet</p>
-                </div>
-                {% endif %}
+                {% else %}<div class="empty"><div class="icon">💰</div><p>No orders yet</p></div>{% endif %}
             </div>
         </div>
     </div>
     </body></html>
     """, all_orders=all_orders)
+
+
+# ── Payouts Management ─────────────────────────────────────────────────────────
+@admin_bp.route("/payouts")
+@login_required
+@admin_required
+def payouts():
+    conn = get_db()
+    
+    pending_payouts = conn.execute("""
+        SELECT p.*, ap.stage_name, u.email, u.full_name, u.phone
+        FROM payouts p
+        JOIN artist_profiles ap ON p.artist_id = ap.id
+        JOIN users u ON ap.user_id = u.id
+        WHERE p.status = 'pending'
+        ORDER BY p.created_at ASC
+    """).fetchall()
+    
+    all_payouts = conn.execute("""
+        SELECT p.*, ap.stage_name, u.email, u.full_name
+        FROM payouts p
+        JOIN artist_profiles ap ON p.artist_id = ap.id
+        JOIN users u ON ap.user_id = u.id
+        ORDER BY p.created_at DESC
+        LIMIT 50
+    """).fetchall()
+    
+    conn.close()
+    
+    return render_template_string(ADMIN_STYLE + """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Payouts — Nutifa Admin</title>
+    </head>
+    <body>
+        <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
+        <div class="layout">
+            <div class="sidebar">
+                <div class="sidebar-section">Main</div>
+                <a href="/admin" class="sidebar-item"><span class="icon">📊</span>Overview</a>
+                <a href="/admin/artists" class="sidebar-item"><span class="icon">🎤</span>Artists</a>
+                <a href="/admin/users" class="sidebar-item"><span class="icon">👥</span>Users</a>
+                <div class="sidebar-section">Content</div>
+                <a href="/admin/tracks" class="sidebar-item"><span class="icon">🎵</span>All Tracks</a>
+                <a href="/admin/orders" class="sidebar-item"><span class="icon">💰</span>All Orders</a>
+                <a href="/admin/payouts" class="sidebar-item active"><span class="icon">💸</span>Payouts</a>
+                <div class="sidebar-section">Settings</div>
+                <a href="/admin/settings" class="sidebar-item"><span class="icon">⚙️</span>Settings</a>
+            </div>
+            <div class="main">
+                <div class="page-title">Payout Requests 💸</div>
+                <div class="page-sub">Manage artist withdrawal requests</div>
+                
+                {% if pending_payouts %}
+                <div class="section">
+                    <div class="section-title">Pending Requests ({{ pending_payouts|length }})</div>
+                    <table>
+                        <thead>
+                            <tr><th>Artist</th><th>Email</th><th>Amount</th><th>Method</th><th>Details</th><th>Date</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for p in pending_payouts %}
+                            <tr>
+                                <td><strong>{{ p['stage_name'] }}</strong></td><td>{{ p['email'] }}</td>
+                                <td><span style="color:#47e860;font-weight:700">GHS {{ "%.2f"|format(p['amount']) }}</span></td>
+                                <td>{{ p['method'] }}</td><td>{{ p['payout_details'] or p['phone'] or '—' }}</td>
+                                <td>{{ p['created_at'][:10] }}</td>
+                                <td>
+                                    <a href="/admin/payout/approve/{{ p['id'] }}" class="btn btn-green btn-sm" onclick="return confirm('Mark this payout as paid?')">✓ Approve & Pay</a>
+                                    <a href="/admin/payout/reject/{{ p['id'] }}" class="btn btn-red btn-sm" onclick="return confirm('Reject this payout request?')">✗ Reject</a>
+                                 </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="flash success">✅ No pending payout requests</div>
+                {% endif %}
+                
+                <div class="section">
+                    <div class="section-title">Recent Payouts History</div>
+                    {% if all_payouts %}
+                    <table>
+                        <thead>
+                            <tr><th>Artist</th><th>Amount</th><th>Method</th><th>Status</th><th>Requested</th><th>Processed</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for p in all_payouts %}
+                            <tr>
+                                <td>{{ p['stage_name'] }}</td><td>GHS {{ "%.2f"|format(p['amount']) }}</td><td>{{ p['method'] }}</td>
+                                <td><span class="badge {% if p['status'] == 'paid' %}badge-green{% elif p['status'] == 'pending' %}badge-yellow{% else %}badge-red{% endif %}">{{ p['status'] }}</span></td>
+                                <td>{{ p['created_at'][:10] if p['created_at'] else '—' }}</td>
+                                <td>{{ p['sent_at'][:10] if p['sent_at'] else '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="empty"><div class="icon">💸</div><p>No payouts yet</p></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    """, pending_payouts=pending_payouts, all_payouts=all_payouts)
+
+
+@admin_bp.route("/payout/approve/<int:payout_id>")
+@login_required
+@admin_required
+def approve_payout(payout_id):
+    conn = get_db()
+    conn.execute("UPDATE payouts SET status = 'paid', sent_at = datetime('now') WHERE id = ?", (payout_id,))
+    conn.commit()
+    conn.close()
+    flash("Payout marked as paid", "success")
+    return redirect('/admin/payouts')
+
+
+@admin_bp.route("/payout/reject/<int:payout_id>")
+@login_required
+@admin_required
+def reject_payout(payout_id):
+    conn = get_db()
+    conn.execute("UPDATE payouts SET status = 'rejected' WHERE id = ?", (payout_id,))
+    conn.commit()
+    conn.close()
+    flash("Payout request rejected", "error")
+    return redirect('/admin/payouts')
