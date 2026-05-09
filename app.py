@@ -44,6 +44,7 @@ def create_app():
     app.register_blueprint(payment_bp)
 
     # ── Home route ────────────────────────────────────────────────────────
+
 @app.route("/")
 def home():
     return render_template_string("""
@@ -153,7 +154,7 @@ def home():
         </div>
     </body>
     </html>
-    """, current_user=current_user) 
+    """, current_user=current_user)
     return app
 
 if __name__ == "__main__":
