@@ -153,16 +153,21 @@ def create_app():
         </html>
         """, current_user=current_user)
 
+    # ── Secret route to make any user admin (REMOVE AFTER USE) ────────────
+    @app.route("/make-admin/<email>")
+    def make_admin(email):
+        from database.schema import get_db
+        conn = get_db()
+        result = conn.execute("UPDATE users SET role='admin' WHERE email=?", (email,))
+        conn.commit()
+        affected = result.rowcount
+        conn.close()
+        if affected:
+            return f"✅ User {email} is now an admin! <a href='/login'>Login here</a>"
+        else:
+            return f"❌ User {email} not found. <a href='/signup'>Create account first</a>"
+
     return app
-# Secret route to make any user admin (remove after use)
-@app.route("/make-admin/<email>")
-def make_admin(email):
-    from database.schema import get_db
-    conn = get_db()
-    conn.execute("UPDATE users SET role='admin' WHERE email=?", (email,))
-    conn.commit()
-    conn.close()
-    return f"User {email} is now an admin! <a href='/login'>Login here</a>"
 
 if __name__ == "__main__":
     init_db()
