@@ -563,25 +563,30 @@ def request_payout():
     success = ""
     
     if request.method == "POST":
-        amount = float(request.form.get("amount", 0))
-        method = request.form.get("method", "mobile_money")
-        phone = request.form.get("phone", "")
-        
-        if amount <= 0:
-            error = "Please enter a valid amount"
-        elif amount < 10:
-            error = "Minimum withdrawal amount is GHS 10.00"
-        elif amount > balance:
-            error = f"Request amount exceeds your balance of GHS {balance:.2f}"
-        elif not phone and method == "mobile_money":
-            error = "Please enter your mobile money number"
-        else:
-            conn.execute("""
-                INSERT INTO payouts (artist_id, amount, currency, method, reference, status, payout_details)
-                VALUES (?, ?, 'GHS', ?, ?, 'pending', ?)
-            """, (profile['id'], amount, method, f"PAY-{uuid.uuid4().hex[:8]}", phone))
-            conn.commit()
-            success = f"Payout request of GHS {amount:.2f} submitted for approval!"
+        try:
+            amount = float(request.form.get("amount", 0))
+            method = request.form.get("method", "mobile_money")
+            phone = request.form.get("phone", "")
+            
+            if amount <= 0:
+                error = "Please enter a valid amount"
+            elif amount < 10:
+                error = "Minimum withdrawal amount is GHS 10.00"
+            elif balance <= 0:
+                error = "You have no available balance. Make some sales first!"
+            elif amount > balance:
+                error = f"Request amount exceeds your balance of GHS {balance:.2f}"
+            elif not phone and method == "mobile_money":
+                error = "Please enter your mobile money number"
+            else:
+                conn.execute("""
+                    INSERT INTO payouts (artist_id, amount, currency, method, reference, status, payout_details)
+                    VALUES (?, ?, 'GHS', ?, ?, 'pending', ?)
+                """, (profile['id'], amount, method, f"PAY-{uuid.uuid4().hex[:8]}", phone))
+                conn.commit()
+                success = f"Payout request of GHS {amount:.2f} submitted for approval!"
+        except Exception as e:
+            error = f"Error: {str(e)}"
     
     conn.close()
     
@@ -646,8 +651,8 @@ def request_payout():
                     <form method="POST">
                         <div class="form-group">
                             <label>Amount (GHS) *</label>
-                            <input type="number" name="amount" min="10" max="{{ balance }}" step="1" required>
-                            <small style="color:#555">Minimum withdrawal: GHS 10.00</small>
+                            <input type="number" name="amount" min="10" {% if balance > 0 %}max="{{ balance }}"{% else %}max="0"{% endif %} step="1" required>
+                            <small style="color:#555">Minimum withdrawal: GHS 10.00. {% if balance <= 0 %}You need sales before requesting payout.{% endif %}</small>
                         </div>
                         <div class="form-group">
                             <label>Payment Method *</label>
@@ -660,21 +665,21 @@ def request_payout():
                             <label>Mobile Money Number / Bank Account</label>
                             <input type="text" name="phone" placeholder="e.g., 024XXXXXXX">
                         </div>
-                        <button type="submit" class="btn btn-gold">Submit Request</button>
+                        <button type="submit" class="btn btn-gold" {% if balance <= 0 %}disabled{% endif %}>Submit Request</button>
                     </form>
                 </div>
                 
                 {% if payout_history %}
                 <div class="section">
                     <div class="section-title">Payout History</div>
-                    <table>
+                    <td>
                         <thead>
                             <tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr>
                         </thead>
                         <tbody>
                         {% for p in payout_history %}
                             <tr>
-                                <td>{{ p['created_at'][:10] }}</td>
+                                <td>{{ p['created_at'][:10] if p['created_at'] else '—' }}</td>
                                 <td>GHS {{ "%.2f"|format(p['amount']) }}</td>
                                 <td>{{ p['method'] }}</td>
                                 <td>
