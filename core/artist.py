@@ -8,6 +8,7 @@ from flask import Blueprint, render_template_string, request, redirect, url_for,
 from flask_login import login_required, current_user
 from database.schema import get_db
 from werkzeug.utils import secure_filename
+from core.storage import upload_to_b2, get_download_url
 
 artist_bp = Blueprint('artist', __name__, url_prefix='/artist')
 
@@ -19,12 +20,16 @@ ALLOWED_VIDEO = {'mp4', 'mov', 'avi'}
 def allowed_file(filename, allowed):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed
 
-def save_file(file, subfolder):
+def save_file_to_b2(file, subfolder):
+    """Save file to Backblaze B2"""
     ext = file.filename.rsplit('.', 1)[1].lower()
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    path = os.path.join(UPLOAD_FOLDER, subfolder, filename)
-    file.save(path)
-    return filename
+    filename = f"{subfolder}/{uuid.uuid4().hex}.{ext}"
+    file_data = file.read()
+    
+    result = upload_to_b2(file_data, filename)
+    if result:
+        return result['file_name']
+    return None
 
 def generate_preview(audio_path, preview_path, duration=30):
     """Generate 30-second preview using FFmpeg"""
@@ -245,6 +250,18 @@ def dashboard():
     
     return render_template_string(html_content)
 
+def save_file_to_b2(file, subfolder):
+    """Save file to Backblaze B2 cloud storage"""
+    from core.storage import upload_to_b2
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    filename = f"{subfolder}/{uuid.uuid4().hex}.{ext}"
+    file_data = file.read()
+    
+    result = upload_to_b2(file_data, filename)
+    if result:
+        return result['file_name']
+    return None
+
 # ── Upload Music ───────────────────────────────────────────────────────────────
 @artist_bp.route("/upload", methods=["GET", "POST"])
 @login_required
@@ -278,27 +295,61 @@ def upload():
             error = "You must certify that you own the rights to this content before uploading."
         else:
             try:
-                audio_filename = save_file(audio_file, "music")
-                full_audio_path = os.path.join(UPLOAD_FOLDER, "music", audio_filename)
-
-                preview_filename = f"preview_{audio_filename}"
-                preview_path = os.path.join(UPLOAD_FOLDER, "music", preview_filename)
-                generate_preview(full_audio_path, preview_path, duration=30)
-
-                cover_filename = ""
-                if cover_file and cover_file.filename and allowed_file(cover_file.filename, ALLOWED_IMAGE):
-                    cover_filename = save_file(cover_file, "music")
-
-                conn = get_db()
-                conn.execute("""
-                    INSERT INTO tracks
-                    (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published, copyright_certified_at, copyright_certified_ip)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), ?)
-                """, (profile['id'], title, audio_filename, preview_filename, cover_filename,
-                      track_type, float(price), currency, request.remote_addr))
-                conn.commit()
-                conn.close()
-                success = f"'{title}' uploaded successfully with preview!"
+                # Save audio file to B2 cloud storage
+                audio_filename = save_file_to_b2(audio_file, "music")
+                
+                if not audio_filename:
+                    error = "Failed to upload audio to cloud storage"
+                else:
+                    # Generate preview locally first, then upload to B2
+                    import tempfile
+                    temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+                    temp_audio.write(audio_file.read())
+                    temp_audio.close()
+                    audio_file.seek(0)  # Reset file pointer
+                    
+                    # Generate preview
+                    preview_filename = f"preview_{uuid.uuid4().hex}.mp3"
+                    temp_preview = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+                    
+                    # Use FFmpeg to generate preview
+                    import subprocess
+                    cmd = [
+                        'ffmpeg', '-i', temp_audio.name,
+                        '-t', '30',
+                        '-acodec', 'mp3',
+                        '-ab', '64k',
+                        '-y',
+                        temp_preview.name
+                    ]
+                    subprocess.run(cmd, capture_output=True, check=True)
+                    
+                    # Upload preview to B2
+                    with open(temp_preview.name, 'rb') as f:
+                        preview_data = f.read()
+                    preview_result = upload_to_b2(preview_data, f"previews/{preview_filename}")
+                    
+                    # Clean up temp files
+                    os.unlink(temp_audio.name)
+                    os.unlink(temp_preview.name)
+                    
+                    # Save cover image to B2 (if provided)
+                    cover_filename = ""
+                    if cover_file and cover_file.filename and allowed_file(cover_file.filename, ALLOWED_IMAGE):
+                        cover_filename = save_file_to_b2(cover_file, "covers")
+                    
+                    # Save to database
+                    conn = get_db()
+                    conn.execute("""
+                        INSERT INTO tracks
+                        (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published, copyright_certified_at, copyright_certified_ip)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), ?)
+                    """, (profile['id'], title, audio_filename, f"previews/{preview_filename}", cover_filename,
+                          track_type, float(price), currency, request.remote_addr))
+                    conn.commit()
+                    conn.close()
+                    success = f"'{title}' uploaded successfully with preview!"
+                    
             except Exception as e:
                 error = f"Upload failed: {e}"
 
@@ -318,13 +369,11 @@ def upload():
             <a href="/artist/upload" class="sidebar-item active"><span class="icon">📤</span>Upload Music</a>
             <a href="/artist/tracks" class="sidebar-item"><span class="icon">🎵</span>My Tracks</a>
             <a href="/artist/request-payout" class="sidebar-item"><span class="icon">💰</span>Request Payout</a>
-            <a href="/artist/merch" class="sidebar-item"><span class="icon">👕</span>Merchandise</a>
-            <a href="/artist/sales" class="sidebar-item"><span class="icon">💰</span>Sales</a>
-            <a href="/artist/profile" class="sidebar-item"><span class="icon">👤</span>My Profile</a>
+            <a href="/store" class="sidebar-item"><span class="icon">🏪</span>Visit Store</a>
         </div>
         <div class="main">
             <div class="page-title">Upload Music 📤</div>
-            <div class="page-sub">Upload your tracks, beats and instrumentals</div>"""
+            <div class="page-sub">Upload your tracks to the cloud</div>"""
     
     if error:
         html_content += '<div class="flash">' + error + '</div>'
@@ -384,6 +433,7 @@ def upload():
     </body></html>
     """
     
+    return render_template_string(html_content)    
     return render_template_string(html_content)
 
 # ── My Tracks ─────────────────────────────────────────────────────────────────
