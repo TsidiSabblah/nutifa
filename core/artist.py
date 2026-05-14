@@ -31,22 +31,22 @@ def save_file_to_b2(file, subfolder):
         return result['file_name']
     return None
 
-def generate_preview(audio_path, preview_path, duration=30):
-    """Generate 30-second preview using FFmpeg"""
-    try:
-        cmd = [
-            'ffmpeg', '-i', audio_path,
-            '-t', str(duration),
-            '-acodec', 'mp3',
-            '-ab', '64k',
-            '-y',
-            preview_path
-        ]
-        subprocess.run(cmd, capture_output=True, check=True)
-        return True
-    except Exception as e:
-        print(f"Preview generation failed: {e}")
-        return False
+# Try to generate preview, but don't fail if it doesn't work
+preview_filename = None
+try:
+    preview_filename = f"preview_{audio_filename}"
+    preview_path = os.path.join(UPLOAD_FOLDER, "music", preview_filename)
+    
+    # Check if FFmpeg is available
+    import shutil
+    if shutil.which('ffmpeg'):
+        generate_preview(full_audio_path, preview_path, duration=30)
+    else:
+        print("FFmpeg not available, skipping preview")
+        preview_filename = None
+except Exception as e:
+    print(f"Preview generation skipped: {e}")
+    preview_filename = None
 
 DASH_STYLE = """
 <style>
