@@ -13,6 +13,7 @@ from core.store import store_bp
 from core.artist import artist_bp
 from core.admin import admin_bp
 from core.payment import payment_bp
+from core.legal import legal_bp
 
 def create_app():
     app = Flask(__name__)
@@ -32,6 +33,7 @@ def create_app():
     app.register_blueprint(artist_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(payment_bp)
+    app.register_blueprint(legal_bp)
 
     # Home route
     @app.route("/")
