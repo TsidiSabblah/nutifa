@@ -664,11 +664,13 @@ def request_payout():
     
     conn.close()
     
+    # The render_template_string call must be properly closed with parentheses
     return render_template_string(DASH_STYLE + """
     <!DOCTYPE html>
     <html>
     <head>
         <title>Request Payout — Nutifa</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
         <nav>
@@ -746,7 +748,7 @@ def request_payout():
                 {% if payout_history %}
                 <div class="section">
                     <div class="section-title">Payout History</div>
-                    <td>
+                    <table>
                         <thead>
                             <tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr>
                         </thead>
