@@ -3,9 +3,6 @@ import sys
 import uuid
 import subprocess
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-# At the top of the file, add request import if not already there
-from flask import request  # Add this if missing
-
 
 from flask import Blueprint, render_template_string, request, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -120,23 +117,11 @@ tr:hover td { background:#1a1a1a; }
 .badge-red { background:#2a1a1a; color:#e84747; }
 .empty { text-align:center; padding:40px; color:#444; }
 .empty .icon { font-size:2.5rem; margin-bottom:8px; }
-.tab-bar { display:flex; gap:4px; margin-bottom:24px; border-bottom:1px solid #1e1e1e; }
-.tab {
-    padding:10px 20px; color:#555; cursor:pointer;
-    font-size:0.9rem; text-decoration:none;
-    border-bottom:2px solid transparent; margin-bottom:-1px;
-}
-.tab:hover { color:#aaa; }
-.tab.active { color:#e8c547; border-bottom-color:#e8c547; }
 @media (max-width: 768px) {
     nav { padding: 0 16px; flex-wrap: wrap; height: auto; padding: 12px 16px; }
     .logo { font-size: 1.4rem; }
     .nav-links { gap: 12px; flex-wrap: wrap; margin-top: 8px; }
     .nav-links a, .btn { font-size: 0.75rem; padding: 6px 12px; }
-    .hero { padding: 40px 20px; }
-    .hero h1 { font-size: 2rem; }
-    .hero p { font-size: 0.9rem; }
-    .hero-btns { flex-direction: column; gap: 10px; }
     .stats-bar { flex-wrap: wrap; gap: 16px; padding: 16px; }
     .stat { flex: 1; min-width: 80px; }
     .categories { padding: 16px; gap: 8px; }
@@ -191,7 +176,6 @@ def dashboard():
         (profile['id'],)
     ).fetchone()[0]
     
-    # Calculate available balance for payout
     total_paid = conn.execute(
         "SELECT COALESCE(SUM(amount),0) FROM payouts WHERE artist_id=? AND status='paid'",
         (profile['id'],)
@@ -206,7 +190,7 @@ def dashboard():
     """, (profile['id'],)).fetchall()
     conn.close()
 
-    return render_template_string(DASH_STYLE + """
+    html_content = DASH_STYLE + """
     <!DOCTYPE html><html><head><title>Dashboard — Nutifa</title></head><body>
     <nav>
         <a href="/" class="logo">NUTIFA.</a>
@@ -218,92 +202,48 @@ def dashboard():
     </nav>
     <div class="layout">
         <div class="sidebar">
-            <a href="/artist/dashboard" class="sidebar-item active">
-                <span class="icon">📊</span>Dashboard
-            </a>
-            <a href="/artist/upload" class="sidebar-item">
-                <span class="icon">📤</span>Upload Music
-            </a>
-            <a href="/artist/tracks" class="sidebar-item">
-                <span class="icon">🎵</span>My Tracks
-            </a>
-            <a href="/artist/request-payout" class="sidebar-item">
-                <span class="icon">💰</span>Request Payout
-            </a>
-            <a href="/artist/merch" class="sidebar-item">
-                <span class="icon">👕</span>Merchandise
-            </a>
-            <a href="/artist/sales" class="sidebar-item">
-                <span class="icon">💰</span>Sales
-            </a>
-            <a href="/artist/profile" class="sidebar-item">
-                <span class="icon">👤</span>My Profile
-            </a>
-            <a href="/store" class="sidebar-item">
-                <span class="icon">🏪</span>Visit Store
-            </a>
+            <a href="/artist/dashboard" class="sidebar-item active"><span class="icon">📊</span>Dashboard</a>
+            <a href="/artist/upload" class="sidebar-item"><span class="icon">📤</span>Upload Music</a>
+            <a href="/artist/tracks" class="sidebar-item"><span class="icon">🎵</span>My Tracks</a>
+            <a href="/artist/request-payout" class="sidebar-item"><span class="icon">💰</span>Request Payout</a>
+            <a href="/artist/merch" class="sidebar-item"><span class="icon">👕</span>Merchandise</a>
+            <a href="/artist/sales" class="sidebar-item"><span class="icon">💰</span>Sales</a>
+            <a href="/artist/profile" class="sidebar-item"><span class="icon">👤</span>My Profile</a>
+            <a href="/store" class="sidebar-item"><span class="icon">🏪</span>Visit Store</a>
         </div>
         <div class="main">
-            <div class="page-title">Welcome back, {{ profile['stage_name'] }} 🎤</div>
-            <div class="page-sub">Here's how your music is performing</div>
-            {% if not profile['is_verified'] %}
-            <div class="flash">
-                ⏳ Your artist account is pending approval from Nutifa admin.
-                You can upload music but it won't be visible until approved.
-            </div>
-            {% endif %}
+            <div class="page-title">Welcome back, """ + str(profile['stage_name']) + """ 🎤</div>
+            <div class="page-sub">Here's how your music is performing</div>"""
+    
+    if not profile['is_verified']:
+        html_content += '<div class="flash">⏳ Your artist account is pending approval from Nutifa admin. You can upload music but it won\'t be visible until approved.</div>'
+    
+    html_content += """
             <div class="stats-row">
-                <div class="stat-card">
-                    <div class="num">{{ track_count }}</div>
-                    <div class="label">Total Tracks</div>
-                </div>
-                <div class="stat-card">
-                    <div class="num">{{ total_sales }}</div>
-                    <div class="label">Total Sales</div>
-                </div>
-                <div class="stat-card">
-                    <div class="num">GHS {{ "%.2f"|format(total_earned) }}</div>
-                    <div class="label">Total Earned</div>
-                </div>
-                <div class="stat-card">
-                    <div class="num">GHS {{ "%.2f"|format(available_balance) }}</div>
-                    <div class="label">Available Balance</div>
-                </div>
+                <div class="stat-card"><div class="num">""" + str(track_count) + """</div><div class="label">Total Tracks</div></div>
+                <div class="stat-card"><div class="num">""" + str(total_sales) + """</div><div class="label">Total Sales</div></div>
+                <div class="stat-card"><div class="num">GHS """ + "{:.2f}".format(total_earned) + """</div><div class="label">Total Earned</div></div>
+                <div class="stat-card"><div class="num">GHS """ + "{:.2f}".format(available_balance) + """</div><div class="label">Available Balance</div></div>
             </div>
             <div class="section">
-                <div class="section-title">Recent Sales</div>
-                {% if recent_orders %}
-                <table>
-                    <thead>
-                        <tr><th>Item</th><th>Amount</th><th>You Earn</th><th>Date</th><th>Status</th></tr>
-                    </thead>
-                    <tbody>
-                    {% for o in recent_orders %}
-                        <tr>
-                            <td>{{ o['track_title'] or o['item_type'] }}</td>
-                            <td>GHS {{ "%.2f"|format(o['amount']) }}</td>
-                            <td>GHS {{ "%.2f"|format(o['artist_earnings']) }}</td>
-                            <td>{{ o['created_at'][:10] }}</td>
-                            <td><span class="badge badge-green">{{ o['status'] }}</span></td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="empty">
-                    <div class="icon">💰</div>
-                    <p>No sales yet — upload your music to get started!</p>
-                    <br>
-                    <a href="/artist/upload" class="btn btn-gold">Upload Now</a>
-                </div>
-                {% endif %}
+                <div class="section-title">Recent Sales</div>"""
+    
+    if recent_orders:
+        html_content += '<table><thead><tr><th>Item</th><th>Amount</th><th>You Earn</th><th>Date</th><th>Status</th></tr></thead><tbody>'
+        for o in recent_orders:
+            html_content += '<tr><td>' + str(o['track_title'] or o['item_type']) + '</td><td>GHS ' + "{:.2f}".format(o['amount']) + '</td><td>GHS ' + "{:.2f}".format(o['artist_earnings']) + '</td><td>' + str(o['created_at'][:10]) + '</td><td><span class="badge badge-green">' + str(o['status']) + '</span></td></tr>'
+        html_content += '</tbody></table>'
+    else:
+        html_content += '<div class="empty"><div class="icon">💰</div><p>No sales yet — upload your music to get started!</p><br><a href="/artist/upload" class="btn btn-gold">Upload Now</a></div>'
+    
+    html_content += """
             </div>
         </div>
     </div>
     </body></html>
-    """, profile=profile, track_count=track_count,
-         total_sales=total_sales, total_earned=total_earned,
-         available_balance=available_balance, recent_orders=recent_orders)
+    """
+    
+    return render_template_string(html_content)
 
 # ── Upload Music ───────────────────────────────────────────────────────────────
 @artist_bp.route("/upload", methods=["GET", "POST"])
@@ -326,6 +266,7 @@ def upload():
         currency   = request.form.get("currency") or "GHS"
         audio_file = request.files.get("audio_file")
         cover_file = request.files.get("cover_image")
+        copyright_certify = request.form.get("copyright_certify")
 
         if not title:
             error = "Please enter a track title."
@@ -333,12 +274,13 @@ def upload():
             error = "Please upload an audio file."
         elif not allowed_file(audio_file.filename, ALLOWED_AUDIO):
             error = "Audio must be MP3, WAV, OGG or M4A."
+        elif not copyright_certify:
+            error = "You must certify that you own the rights to this content before uploading."
         else:
             try:
                 audio_filename = save_file(audio_file, "music")
                 full_audio_path = os.path.join(UPLOAD_FOLDER, "music", audio_filename)
 
-                # Generate 30-second preview
                 preview_filename = f"preview_{audio_filename}"
                 preview_path = os.path.join(UPLOAD_FOLDER, "music", preview_filename)
                 generate_preview(full_audio_path, preview_path, duration=30)
@@ -350,17 +292,17 @@ def upload():
                 conn = get_db()
                 conn.execute("""
                     INSERT INTO tracks
-                    (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published, copyright_certified_at, copyright_certified_ip)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), ?)
                 """, (profile['id'], title, audio_filename, preview_filename, cover_filename,
-                      track_type, float(price), currency))
+                      track_type, float(price), currency, request.remote_addr))
                 conn.commit()
                 conn.close()
                 success = f"'{title}' uploaded successfully with preview!"
             except Exception as e:
                 error = f"Upload failed: {e}"
 
-    return render_template_string(DASH_STYLE + """
+    html_content = DASH_STYLE + """
     <!DOCTYPE html><html><head><title>Upload — Nutifa</title></head><body>
     <nav>
         <a href="/" class="logo">NUTIFA.</a>
@@ -372,33 +314,24 @@ def upload():
     </nav>
     <div class="layout">
         <div class="sidebar">
-            <a href="/artist/dashboard" class="sidebar-item">
-                <span class="icon">📊</span>Dashboard
-            </a>
-            <a href="/artist/upload" class="sidebar-item active">
-                <span class="icon">📤</span>Upload Music
-            </a>
-            <a href="/artist/tracks" class="sidebar-item">
-                <span class="icon">🎵</span>My Tracks
-            </a>
-            <a href="/artist/request-payout" class="sidebar-item">
-                <span class="icon">💰</span>Request Payout
-            </a>
-            <a href="/artist/merch" class="sidebar-item">
-                <span class="icon">👕</span>Merchandise
-            </a>
-            <a href="/artist/sales" class="sidebar-item">
-                <span class="icon">💰</span>Sales
-            </a>
-            <a href="/artist/profile" class="sidebar-item">
-                <span class="icon">👤</span>My Profile
-            </a>
+            <a href="/artist/dashboard" class="sidebar-item"><span class="icon">📊</span>Dashboard</a>
+            <a href="/artist/upload" class="sidebar-item active"><span class="icon">📤</span>Upload Music</a>
+            <a href="/artist/tracks" class="sidebar-item"><span class="icon">🎵</span>My Tracks</a>
+            <a href="/artist/request-payout" class="sidebar-item"><span class="icon">💰</span>Request Payout</a>
+            <a href="/artist/merch" class="sidebar-item"><span class="icon">👕</span>Merchandise</a>
+            <a href="/artist/sales" class="sidebar-item"><span class="icon">💰</span>Sales</a>
+            <a href="/artist/profile" class="sidebar-item"><span class="icon">👤</span>My Profile</a>
         </div>
         <div class="main">
             <div class="page-title">Upload Music 📤</div>
-            <div class="page-sub">Upload your tracks, beats and instrumentals</div>
-            {% if error %}<div class="flash">{{ error }}</div>{% endif %}
-            {% if success %}<div class="flash success">✅ {{ success }}</div>{% endif %}
+            <div class="page-sub">Upload your tracks, beats and instrumentals</div>"""
+    
+    if error:
+        html_content += '<div class="flash">' + error + '</div>'
+    if success:
+        html_content += '<div class="flash success">✅ ' + success + '</div>'
+    
+    html_content += """
             <div class="section">
                 <div class="section-title">Track Details</div>
                 <form method="POST" enctype="multipart/form-data">
@@ -437,84 +370,21 @@ def upload():
                         <label>Cover Image (JPG, PNG — optional)</label>
                         <input type="file" name="cover_image" accept=".jpg,.jpeg,.png,.webp">
                     </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" name="copyright_certify" required style="width: auto;">
+                            <span style="color: #aaa; font-size: 0.85rem;">⚠️ I certify under penalty of perjury that I own the rights to this content. <a href="/legal/copyright" target="_blank" style="color:#e8c547;">Read full policy</a></span>
+                        </label>
+                    </div>
                     <button type="submit" class="btn btn-gold">📤 Upload Track</button>
                 </form>
             </div>
         </div>
     </div>
     </body></html>
-    """, error=error, success=success, profile=profile)
-@artist_bp.route("/upload", methods=["GET", "POST"])
-@login_required
-def upload():
-    if current_user.role not in ('artist', 'admin'):
-        return redirect('/store')
-
-    profile = get_artist_profile(current_user.id)
-    if not profile:
-        return redirect('/artist/setup')
-
-    error = ""
-    success = ""
-
-    if request.method == "POST":
-        title      = (request.form.get("title") or "").strip()
-        track_type = request.form.get("track_type") or "song"
-        price      = request.form.get("price") or "0"
-        currency   = request.form.get("currency") or "GHS"
-        audio_file = request.files.get("audio_file")
-        cover_file = request.files.get("cover_image")
-        copyright_certify = request.form.get("copyright_certify")  # Add this line
-
-        if not title:
-            error = "Please enter a track title."
-        elif not audio_file or not audio_file.filename:
-            error = "Please upload an audio file."
-        elif not allowed_file(audio_file.filename, ALLOWED_AUDIO):
-            error = "Audio must be MP3, WAV, OGG or M4A."
-        elif not copyright_certify:  # Add this block
-            error = "You must certify that you own the rights to this content before uploading."
-        else:
-            try:
-                audio_filename = save_file(audio_file, "music")
-                full_audio_path = os.path.join(UPLOAD_FOLDER, "music", audio_filename)
-
-                # Generate 30-second preview
-                preview_filename = f"preview_{audio_filename}"
-                preview_path = os.path.join(UPLOAD_FOLDER, "music", preview_filename)
-                generate_preview(full_audio_path, preview_path, duration=30)
-
-                cover_filename = ""
-                if cover_file and cover_file.filename and allowed_file(cover_file.filename, ALLOWED_IMAGE):
-                    cover_filename = save_file(cover_file, "music")
-
-                conn = get_db()
-                
-                # Log the copyright certification for audit purposes (optional)
-                # You can add a copyright_certified_at column to tracks table
-                
-                conn.execute("""
-                    INSERT INTO tracks
-                    (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-                """, (profile['id'], title, audio_filename, preview_filename, cover_filename,
-                      track_type, float(price), currency))
-                conn.commit()
-                conn.close()
-                success = f"'{title}' uploaded successfully with preview!"
-            except Exception as e:
-                error = f"Upload failed: {e}"
-
-    return render_template_string(DASH_STYLE + """
-    <!-- rest of your template -->
     """
-# In the upload route, when inserting the track, update to include the new columns
-conn.execute("""
-    INSERT INTO tracks
-    (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published, copyright_certified_at, copyright_certified_ip)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), ?)
-""", (profile['id'], title, audio_filename, preview_filename, cover_filename,
-      track_type, float(price), currency, request.remote_addr))
+    
+    return render_template_string(html_content)
 
 # ── My Tracks ─────────────────────────────────────────────────────────────────
 @artist_bp.route("/tracks")
@@ -530,7 +400,7 @@ def tracks():
     ).fetchall()
     conn.close()
 
-    return render_template_string(DASH_STYLE + """
+    html_content = DASH_STYLE + """
     <!DOCTYPE html><html><head><title>My Tracks — Nutifa</title></head><body>
     <nav>
         <a href="/" class="logo">NUTIFA.</a>
@@ -542,65 +412,38 @@ def tracks():
     </nav>
     <div class="layout">
         <div class="sidebar">
-            <a href="/artist/dashboard" class="sidebar-item">
-                <span class="icon">📊</span>Dashboard
-            </a>
-            <a href="/artist/upload" class="sidebar-item">
-                <span class="icon">📤</span>Upload Music
-            </a>
-            <a href="/artist/tracks" class="sidebar-item active">
-                <span class="icon">🎵</span>My Tracks
-            </a>
-            <a href="/artist/request-payout" class="sidebar-item">
-                <span class="icon">💰</span>Request Payout
-            </a>
-            <a href="/artist/merch" class="sidebar-item">
-                <span class="icon">👕</span>Merchandise
-            </a>
-            <a href="/artist/sales" class="sidebar-item">
-                <span class="icon">💰</span>Sales
-            </a>
-            <a href="/artist/profile" class="sidebar-item">
-                <span class="icon">👤</span>My Profile
-            </a>
+            <a href="/artist/dashboard" class="sidebar-item"><span class="icon">📊</span>Dashboard</a>
+            <a href="/artist/upload" class="sidebar-item"><span class="icon">📤</span>Upload Music</a>
+            <a href="/artist/tracks" class="sidebar-item active"><span class="icon">🎵</span>My Tracks</a>
+            <a href="/artist/request-payout" class="sidebar-item"><span class="icon">💰</span>Request Payout</a>
+            <a href="/artist/merch" class="sidebar-item"><span class="icon">👕</span>Merchandise</a>
+            <a href="/artist/sales" class="sidebar-item"><span class="icon">💰</span>Sales</a>
+            <a href="/artist/profile" class="sidebar-item"><span class="icon">👤</span>My Profile</a>
         </div>
         <div class="main">
             <div class="page-title">My Tracks 🎵</div>
             <div class="page-sub">Manage your uploaded music</div>
-            <div style="margin-bottom:20px">
-                <a href="/artist/upload" class="btn btn-gold">+ Upload New Track</a>
-            </div>
-            <div class="section">
-                {% if my_tracks %}
-                <table>
-                    <thead>
-                        <tr><th>Title</th><th>Type</th><th>Price</th><th>Downloads</th><th>Status</th></tr>
-                    </thead>
-                    <tbody>
-                    {% for t in my_tracks %}
-                        <tr>
-                            <td>{{ t['title'] }}</td>
-                            <td>{{ t['track_type'] }}</td>
-                            <td>{% if t['price'] == 0 %}<span style="color:#47e860">FREE</span>{% else %}{{ t['currency'] }} {{ "%.2f"|format(t['price']) }}{% endif %}</td>
-                            <td>{{ t['downloads'] }}</td>
-                            <td>{% if t['is_published'] %}<span class="badge badge-green">Published</span>{% else %}<span class="badge badge-yellow">Draft</span>{% endif %}</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <div class="empty">
-                    <div class="icon">🎵</div>
-                    <p>No tracks yet — upload your first track!</p>
-                    <br>
-                    <a href="/artist/upload" class="btn btn-gold">Upload Now</a>
-                </div>
-                {% endif %}
+            <div style="margin-bottom:20px"><a href="/artist/upload" class="btn btn-gold">+ Upload New Track</a></div>
+            <div class="section">"""
+    
+    if my_tracks:
+        html_content += '<table><thead><tr><th>Title</th><th>Type</th><th>Price</th><th>Downloads</th><th>Status</th></tr></thead><tbody>'
+        for t in my_tracks:
+            price_display = 'FREE' if t['price'] == 0 else f"{t['currency']} {t['price']:.2f}"
+            status_display = '<span class="badge badge-green">Published</span>' if t['is_published'] else '<span class="badge badge-yellow">Draft</span>'
+            html_content += f'<tr><td>{t["title"]}</td><td>{t["track_type"]}</td><td>{price_display}</td><td>{t["downloads"]}</td><td>{status_display}</td></tr>'
+        html_content += '</tbody></table>'
+    else:
+        html_content += '<div class="empty"><div class="icon">🎵</div><p>No tracks yet — upload your first track!</p><br><a href="/artist/upload" class="btn btn-gold">Upload Now</a></div>'
+    
+    html_content += """
             </div>
         </div>
     </div>
     </body></html>
-    """, my_tracks=my_tracks, profile=profile)
+    """
+    
+    return render_template_string(html_content)
 
 # ── Request Payout ────────────────────────────────────────────────────────────
 @artist_bp.route("/request-payout", methods=["GET", "POST"])
@@ -615,7 +458,6 @@ def request_payout():
     
     conn = get_db()
     
-    # Calculate available balance
     total_earned = conn.execute(
         "SELECT COALESCE(SUM(artist_earnings),0) FROM orders WHERE artist_id=? AND status='paid'",
         (profile['id'],)
@@ -628,7 +470,6 @@ def request_payout():
     
     balance = total_earned - total_paid
     
-    # Get payout history
     payout_history = conn.execute("""
         SELECT * FROM payouts WHERE artist_id=? ORDER BY created_at DESC
     """, (profile['id'],)).fetchall()
@@ -664,7 +505,7 @@ def request_payout():
     
     conn.close()
     
-    return render_template_string(DASH_STYLE + """
+    html_content = DASH_STYLE + """
     <!DOCTYPE html>
     <html>
     <head>
@@ -682,30 +523,14 @@ def request_payout():
         </nav>
         <div class="layout">
             <div class="sidebar">
-                <a href="/artist/dashboard" class="sidebar-item">
-                    <span class="icon">📊</span>Dashboard
-                </a>
-                <a href="/artist/upload" class="sidebar-item">
-                    <span class="icon">📤</span>Upload Music
-                </a>
-                <a href="/artist/tracks" class="sidebar-item">
-                    <span class="icon">🎵</span>My Tracks
-                </a>
-                <a href="/artist/request-payout" class="sidebar-item active">
-                    <span class="icon">💰</span>Request Payout
-                </a>
-                <a href="/artist/merch" class="sidebar-item">
-                    <span class="icon">👕</span>Merchandise
-                </a>
-                <a href="/artist/sales" class="sidebar-item">
-                    <span class="icon">💰</span>Sales
-                </a>
-                <a href="/artist/profile" class="sidebar-item">
-                    <span class="icon">👤</span>My Profile
-                </a>
-                <a href="/store" class="sidebar-item">
-                    <span class="icon">🏪</span>Visit Store
-                </a>
+                <a href="/artist/dashboard" class="sidebar-item"><span class="icon">📊</span>Dashboard</a>
+                <a href="/artist/upload" class="sidebar-item"><span class="icon">📤</span>Upload Music</a>
+                <a href="/artist/tracks" class="sidebar-item"><span class="icon">🎵</span>My Tracks</a>
+                <a href="/artist/request-payout" class="sidebar-item active"><span class="icon">💰</span>Request Payout</a>
+                <a href="/artist/merch" class="sidebar-item"><span class="icon">👕</span>Merchandise</a>
+                <a href="/artist/sales" class="sidebar-item"><span class="icon">💰</span>Sales</a>
+                <a href="/artist/profile" class="sidebar-item"><span class="icon">👤</span>My Profile</a>
+                <a href="/store" class="sidebar-item"><span class="icon">🏪</span>Visit Store</a>
             </div>
             <div class="main">
                 <div class="page-title">Request Payout 💰</div>
@@ -713,21 +538,24 @@ def request_payout():
                 
                 <div class="stats-row">
                     <div class="stat-card">
-                        <div class="num">GHS {{ "%.2f"|format(balance) }}</div>
+                        <div class="num">GHS """ + "{:.2f}".format(balance) + """</div>
                         <div class="label">Available Balance</div>
                     </div>
-                </div>
-                
-                {% if error %}<div class="flash">{{ error }}</div>{% endif %}
-                {% if success %}<div class="flash success">✅ {{ success }}</div>{% endif %}
-                
+                </div>"""
+    
+    if error:
+        html_content += '<div class="flash">' + error + '</div>'
+    if success:
+        html_content += '<div class="flash success">✅ ' + success + '</div>'
+    
+    html_content += """
                 <div class="section">
                     <div class="section-title">Withdrawal Request</div>
                     <form method="POST">
                         <div class="form-group">
                             <label>Amount (GHS) *</label>
-                            <input type="number" name="amount" min="10" {% if balance > 0 %}max="{{ balance }}"{% else %}max="0"{% endif %} step="1" required>
-                            <small style="color:#555">Minimum withdrawal: GHS 10.00. {% if balance <= 0 %}You need sales before requesting payout.{% endif %}</small>
+                            <input type="number" name="amount" min="10" """ + ('max="' + "{:.2f}".format(balance) + '"' if balance > 0 else 'max="0"') + """ step="1" required>
+                            <small style="color:#555">Minimum withdrawal: GHS 10.00.""" + (' You need sales before requesting payout.' if balance <= 0 else '') + """</small>
                         </div>
                         <div class="form-group">
                             <label>Payment Method *</label>
@@ -740,42 +568,35 @@ def request_payout():
                             <label>Mobile Money Number / Bank Account</label>
                             <input type="text" name="phone" placeholder="e.g., 024XXXXXXX">
                         </div>
-                        <button type="submit" class="btn btn-gold" {% if balance <= 0 %}disabled{% endif %}>Submit Request</button>
+                        <button type="submit" class="btn btn-gold" """ + ('disabled' if balance <= 0 else '') + """>Submit Request</button>
                     </form>
-                </div>
-                
-                {% if payout_history %}
+                </div>"""
+    
+    if payout_history:
+        html_content += """
                 <div class="section">
                     <div class="section-title">Payout History</div>
                     <table>
-                        <thead>
-                            <tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr>
-                        </thead>
-                        <tbody>
-                        {% for p in payout_history %}
-                            <tr>
-                                <td>{{ p['created_at'][:10] if p['created_at'] else '—' }}</td>
-                                <td>GHS {{ "%.2f"|format(p['amount']) }}</td>
-                                <td>{{ p['method'] }}</td>
-                                <td>
-                                    <span class="badge 
-                                        {% if p['status'] == 'paid' %}badge-green
-                                        {% elif p['status'] == 'pending' %}badge-yellow
-                                        {% else %}badge-red{% endif %}">
-                                        {{ p['status'] }}
-                                    </span>
-                                </td>
-                            </tr>
-                        {% endfor %}
+                        <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+                        <tbody>"""
+        for p in payout_history:
+            status_class = 'badge-green' if p['status'] == 'paid' else ('badge-yellow' if p['status'] == 'pending' else 'badge-red')
+            html_content += f'<tr><td>{p["created_at"][:10] if p["created_at"] else "—"}</td><td>GHS {p["amount"]:.2f}</td><td>{p["method"]}</td><td><span class="badge {status_class}">{p["status"]}</span></td></tr>'
+        html_content += """
                         </tbody>
                     </table>
-                </div>
-                {% endif %}
+                </div>"""
+    
+    html_content += """
             </div>
         </div>
     </body>
     </html>
-    """, profile=profile, balance=balance, payout_history=payout_history)# ── Artist Setup (first time) ─────────────────────────────────────────────────
+    """
+    
+    return render_template_string(html_content)
+
+# ── Artist Setup (first time) ─────────────────────────────────────────────────
 @artist_bp.route("/setup", methods=["GET", "POST"])
 @login_required
 def setup():
@@ -795,14 +616,18 @@ def setup():
             conn.close()
             return redirect('/artist/dashboard')
 
-    return render_template_string(DASH_STYLE + """
+    html_content = DASH_STYLE + """
     <!DOCTYPE html><html><head><title>Artist Setup — Nutifa</title></head><body>
     <nav><a href="/" class="logo">NUTIFA.</a></nav>
     <div style="display:flex;align-items:center;justify-content:center;min-height:80vh">
         <div style="background:#141414;border:1px solid #1e1e1e;border-radius:16px;padding:40px;width:100%;max-width:420px">
             <h2 style="color:#e8c547;margin-bottom:8px">Complete Artist Profile 🎤</h2>
-            <p style="color:#555;font-size:0.85rem;margin-bottom:24px">Tell us about yourself</p>
-            {% if error %}<div class="flash">{{ error }}</div>{% endif %}
+            <p style="color:#555;font-size:0.85rem;margin-bottom:24px">Tell us about yourself</p>"""
+    
+    if error:
+        html_content += '<div class="flash">' + error + '</div>'
+    
+    html_content += """
             <form method="POST">
                 <div class="form-group">
                     <label>Stage Name *</label>
@@ -812,22 +637,23 @@ def setup():
                     <label>Genre</label>
                     <select name="genre">
                         <option value="">Select genre...</option>
-                        <option>Afrobeats</option>
-                        <option>Highlife</option>
-                        <option>Hiplife</option>
-                        <option>Gospel</option>
-                        <option>Hip Hop</option>
-                        <option>R&B</option>
-                        <option>Reggae</option>
-                        <option>Dancehall</option>
-                        <option>Afropop</option>
-                        <option>Traditional</option>
-                        <option>Other</option>
+                        <option>Afrobeats</option><option>Highlife</option><option>Hiplife</option>
+                        <option>Gospel</option><option>Hip Hop</option><option>R&B</option>
+                        <option>Reggae</option><option>Dancehall</option><option>Afropop</option>
+                        <option>Traditional</option><option>Other</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" name="agree_terms" required style="width: auto;">
+                        <span style="color: #aaa; font-size: 0.85rem;">I agree to the <a href="/legal/terms" target="_blank" style="color:#e8c547;">Terms of Reference for Artists</a> and confirm that I own the rights to all content I will upload.</span>
+                    </label>
                 </div>
                 <button type="submit" class="btn btn-gold" style="width:100%">Complete Setup →</button>
             </form>
         </div>
     </div>
     </body></html>
-    """, error=error)
+    """
+    
+    return render_template_string(html_content)
