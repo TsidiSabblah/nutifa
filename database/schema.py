@@ -3,10 +3,8 @@ import os
 
 # Use a writable directory on Render
 if os.environ.get('RENDER'):
-    # On Render, use /tmp for database (writable)
     DB_PATH = '/tmp/nutifa.db'
 else:
-    # Local development
     DB_PATH = os.path.join(os.path.dirname(__file__), "nutifa.db")
 
 def get_db():
@@ -19,6 +17,7 @@ def init_db():
     conn = get_db()
     c = conn.cursor()
 
+    # Users table
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,6 +35,7 @@ def init_db():
         )
     """)
 
+    # Artist profiles table
     c.execute("""
         CREATE TABLE IF NOT EXISTS artist_profiles (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,6 +53,7 @@ def init_db():
         )
     """)
 
+    # Albums table
     c.execute("""
         CREATE TABLE IF NOT EXISTS albums (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,6 +68,7 @@ def init_db():
         )
     """)
 
+    # Tracks table with new copyright columns
     c.execute("""
         CREATE TABLE IF NOT EXISTS tracks (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,10 +85,13 @@ def init_db():
             plays         INTEGER DEFAULT 0,
             downloads     INTEGER DEFAULT 0,
             is_published  INTEGER DEFAULT 0,
-            created_at    TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at    TEXT DEFAULT CURRENT_TIMESTAMP,
+            copyright_certified_at TEXT DEFAULT NULL,
+            copyright_certified_ip TEXT DEFAULT NULL
         )
     """)
 
+    # Music videos table
     c.execute("""
         CREATE TABLE IF NOT EXISTS music_videos (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,6 +109,7 @@ def init_db():
         )
     """)
 
+    # Merchandise table
     c.execute("""
         CREATE TABLE IF NOT EXISTS merchandise (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,6 +126,7 @@ def init_db():
         )
     """)
 
+    # Orders table
     c.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,6 +148,7 @@ def init_db():
         )
     """)
 
+    # Payouts table
     c.execute("""
         CREATE TABLE IF NOT EXISTS payouts (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,10 +159,12 @@ def init_db():
             reference  TEXT,
             status     TEXT DEFAULT 'pending',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            sent_at    TEXT
+            sent_at    TEXT,
+            payout_details TEXT
         )
     """)
 
+    # Settings table
     c.execute("""
         CREATE TABLE IF NOT EXISTS settings (
             key   TEXT PRIMARY KEY,
@@ -162,6 +172,26 @@ def init_db():
         )
     """)
 
+    # Add missing columns to existing tracks table if they don't exist
+    try:
+        c.execute("ALTER TABLE tracks ADD COLUMN copyright_certified_at TEXT DEFAULT NULL")
+        print("Added copyright_certified_at column")
+    except sqlite3.OperationalError:
+        print("copyright_certified_at column already exists")
+    
+    try:
+        c.execute("ALTER TABLE tracks ADD COLUMN copyright_certified_ip TEXT DEFAULT NULL")
+        print("Added copyright_certified_ip column")
+    except sqlite3.OperationalError:
+        print("copyright_certified_ip column already exists")
+    
+    try:
+        c.execute("ALTER TABLE payouts ADD COLUMN payout_details TEXT DEFAULT NULL")
+        print("Added payout_details column")
+    except sqlite3.OperationalError:
+        print("payout_details column already exists")
+
+    # Default settings
     defaults = {
         "platform_name":      "Nutifa",
         "platform_cut_pct":   "15",
