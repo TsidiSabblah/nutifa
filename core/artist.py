@@ -664,7 +664,6 @@ def request_payout():
     
     conn.close()
     
-    # The render_template_string call must be properly closed with parentheses
     return render_template_string(DASH_STYLE + """
     <!DOCTYPE html>
     <html>
@@ -776,9 +775,7 @@ def request_payout():
         </div>
     </body>
     </html>
-    """, profile=profile, balance=balance, payout_history=payout_history)
-
-# ── Artist Setup (first time) ─────────────────────────────────────────────────
+    """, profile=profile, balance=balance, payout_history=payout_history)# ── Artist Setup (first time) ─────────────────────────────────────────────────
 @artist_bp.route("/setup", methods=["GET", "POST"])
 @login_required
 def setup():
