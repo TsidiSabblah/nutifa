@@ -3,6 +3,9 @@ import sys
 import uuid
 import subprocess
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# At the top of the file, add request import if not already there
+from flask import request  # Add this if missing
+
 
 from flask import Blueprint, render_template_string, request, redirect, url_for, flash
 from flask_login import login_required, current_user
@@ -441,6 +444,77 @@ def upload():
     </div>
     </body></html>
     """, error=error, success=success, profile=profile)
+@artist_bp.route("/upload", methods=["GET", "POST"])
+@login_required
+def upload():
+    if current_user.role not in ('artist', 'admin'):
+        return redirect('/store')
+
+    profile = get_artist_profile(current_user.id)
+    if not profile:
+        return redirect('/artist/setup')
+
+    error = ""
+    success = ""
+
+    if request.method == "POST":
+        title      = (request.form.get("title") or "").strip()
+        track_type = request.form.get("track_type") or "song"
+        price      = request.form.get("price") or "0"
+        currency   = request.form.get("currency") or "GHS"
+        audio_file = request.files.get("audio_file")
+        cover_file = request.files.get("cover_image")
+        copyright_certify = request.form.get("copyright_certify")  # Add this line
+
+        if not title:
+            error = "Please enter a track title."
+        elif not audio_file or not audio_file.filename:
+            error = "Please upload an audio file."
+        elif not allowed_file(audio_file.filename, ALLOWED_AUDIO):
+            error = "Audio must be MP3, WAV, OGG or M4A."
+        elif not copyright_certify:  # Add this block
+            error = "You must certify that you own the rights to this content before uploading."
+        else:
+            try:
+                audio_filename = save_file(audio_file, "music")
+                full_audio_path = os.path.join(UPLOAD_FOLDER, "music", audio_filename)
+
+                # Generate 30-second preview
+                preview_filename = f"preview_{audio_filename}"
+                preview_path = os.path.join(UPLOAD_FOLDER, "music", preview_filename)
+                generate_preview(full_audio_path, preview_path, duration=30)
+
+                cover_filename = ""
+                if cover_file and cover_file.filename and allowed_file(cover_file.filename, ALLOWED_IMAGE):
+                    cover_filename = save_file(cover_file, "music")
+
+                conn = get_db()
+                
+                # Log the copyright certification for audit purposes (optional)
+                # You can add a copyright_certified_at column to tracks table
+                
+                conn.execute("""
+                    INSERT INTO tracks
+                    (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                """, (profile['id'], title, audio_filename, preview_filename, cover_filename,
+                      track_type, float(price), currency))
+                conn.commit()
+                conn.close()
+                success = f"'{title}' uploaded successfully with preview!"
+            except Exception as e:
+                error = f"Upload failed: {e}"
+
+    return render_template_string(DASH_STYLE + """
+    <!-- rest of your template -->
+    """
+# In the upload route, when inserting the track, update to include the new columns
+conn.execute("""
+    INSERT INTO tracks
+    (artist_id, title, file_path, preview_path, cover_image, track_type, price, currency, is_published, copyright_certified_at, copyright_certified_ip)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), ?)
+""", (profile['id'], title, audio_filename, preview_filename, cover_filename,
+      track_type, float(price), currency, request.remote_addr))
 
 # ── My Tracks ─────────────────────────────────────────────────────────────────
 @artist_bp.route("/tracks")
