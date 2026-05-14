@@ -58,3 +58,47 @@ def upload_to_b2(file_data, filename):
     except Exception as e:
         print(f"❌ Upload to B2 failed: {e}")
         return None
+
+def get_download_url(filename, expires_in=3600):
+    """Get download URL for a file (public or authorized)"""
+    try:
+        bucket = get_b2_bucket()
+        if not bucket:
+            print("❌ No bucket available")
+            return None
+        
+        # Get download URL (works for private buckets)
+        download_url = bucket.get_download_url(filename)
+        return download_url
+    except Exception as e:
+        print(f"❌ Get download URL failed: {e}")
+        return None
+
+def delete_from_b2(filename):
+    """Delete file from B2"""
+    try:
+        bucket = get_b2_bucket()
+        if not bucket:
+            return False
+        
+        # Get file info
+        file_version = bucket.get_file_info_by_name(filename)
+        if file_version:
+            bucket.delete_file_version(file_version.id_, file_version.file_name)
+            print(f"✅ Deleted from B2: {filename}")
+        return True
+    except Exception as e:
+        print(f"❌ Delete from B2 failed: {e}")
+        return False
+
+def file_exists_in_b2(filename):
+    """Check if file exists in B2"""
+    try:
+        bucket = get_b2_bucket()
+        if not bucket:
+            return False
+        
+        file_info = bucket.get_file_info_by_name(filename)
+        return file_info is not None
+    except:
+        return False
