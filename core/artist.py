@@ -32,22 +32,21 @@ def save_file_to_b2(file, subfolder):
     return None
 
 # Try to generate preview, but don't fail if it doesn't work
-preview_filename = None
-try:
-    preview_filename = f"preview_{audio_filename}"
-    preview_path = os.path.join(UPLOAD_FOLDER, "music", preview_filename)
-    
-    # Check if FFmpeg is available
-    import shutil
-    if shutil.which('ffmpeg'):
-        generate_preview(full_audio_path, preview_path, duration=30)
-    else:
-        print("FFmpeg not available, skipping preview")
-        preview_filename = None
-except Exception as e:
-    print(f"Preview generation skipped: {e}")
-    preview_filename = None
+from pydub import AudioSegment
 
+def generate_preview(audio_path, preview_path, duration=30):
+    """Generate 30-second preview using pydub (no FFmpeg needed)"""
+    try:
+        # Load audio (supports mp3, wav, ogg, etc.)
+        audio = AudioSegment.from_file(audio_path)
+        # Take first 30 seconds
+        preview = audio[:duration * 1000]  # duration in milliseconds
+        # Export as MP3
+        preview.export(preview_path, format="mp3")
+        return True
+    except Exception as e:
+        print(f"Preview generation failed: {e}")
+        return False
 DASH_STYLE = """
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
