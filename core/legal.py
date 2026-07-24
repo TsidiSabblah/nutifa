@@ -143,12 +143,12 @@ def terms():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Terms of Reference for Artists - Nutifa</title>
+        <title>Terms of Reference for Artists - Hajilala</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
         <nav>
-            <a href="/" class="logo">NUTIFA.</a>
+            <a href="/" class="logo">HAJILALA.</a>
             <div class="nav-links">
                 <a href="/store">Store</a>
                 <a href="/legal/terms">Terms</a>
@@ -161,7 +161,7 @@ def terms():
             <div class="updated">Last Updated: May 2026</div>
             
             <h2>1. Artist Eligibility</h2>
-            <p>To register as an artist on Nutifa, you must:</p>
+            <p>To register as an artist on Hajilala, you must:</p>
             <ul>
                 <li>Be at least 18 years old or have parental/guardian consent</li>
                 <li>Possess a valid government-issued ID</li>
@@ -182,7 +182,7 @@ def terms():
             <table>
                 <tr><th>Party</th><th>Percentage</th></tr>
                 <tr><td>Artist</td><td><strong>85%</strong> of net sales</td></tr>
-                <tr><td>Nutifa Platform</td><td><strong>15%</strong> of net sales</td></tr>
+                <tr><td>Hajilala Platform</td><td><strong>15%</strong> of net sales</td></tr>
             </table>
             
             <h2>4. Prohibited Content</h2>
@@ -208,7 +208,7 @@ def terms():
         </div>
         
         <footer>
-            <p>© 2026 <span>Nutifa</span> — Peace & Harmony 🎵 Made in Ghana</p>
+            <p>© 2026 <span>Hajilala</span> — Peace & Harmony 🎵 Made in Ghana</p>
         </footer>
     </body>
     </html>
@@ -220,12 +220,12 @@ def copyright_page():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Copyright Disclaimer - Nutifa</title>
+        <title>Copyright Disclaimer - Hajilala</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
         <nav>
-            <a href="/" class="logo">NUTIFA.</a>
+            <a href="/" class="logo">HAJILALA.</a>
             <div class="nav-links">
                 <a href="/store">Store</a>
                 <a href="/legal/terms">Terms</a>
@@ -239,7 +239,7 @@ def copyright_page():
             
             <div class="warning-box">
                 <strong>⚠️ IMPORTANT</strong><br><br>
-                Nutifa strictly prohibits uploading content you do not own or have permission to sell.
+                Hajilala strictly prohibits uploading content you do not own or have permission to sell.
             </div>
             
             <h2>Legal Consequences Under Ghana Law</h2>
@@ -249,7 +249,7 @@ def copyright_page():
                 <tr><th>Violation</th><th>Penalty</th></tr>
                 <tr><td>Civil Liability</td><td>Damages up to <strong>GHS 10,000</strong> per work</td></tr>
                 <tr><td>Criminal Offense</td><td>Fine up to <strong>GHS 20,000</strong> and/or <strong>3 years imprisonment</strong></td></tr>
-                <tr><td>Account</td><td>Immediate and permanent ban from Nutifa</td></tr>
+                <tr><td>Account</td><td>Immediate and permanent ban from Hajilala</td></tr>
                 <tr><td>Earnings</td><td>Forfeiture of proceeds from infringing content</td></tr>
             </table>
             
@@ -262,18 +262,18 @@ def copyright_page():
             </ul>
             
             <h2>Reporting Infringement</h2>
-            <p>To report copyright infringement, email: <strong>copyright@nutifa.com</strong></p>
+            <p>To report copyright infringement, email: <strong>copyright@hajilala.com</strong></p>
             <p>Include: identification of the copyrighted work, infringing content URL, your contact information, and a statement under penalty of perjury.</p>
-            <p><strong>Nutifa responds to valid takedown notices within 48 hours.</strong></p>
+            <p><strong>Hajilala responds to valid takedown notices within 48 hours.</strong></p>
             
             <div class="warning-box">
                 <strong>⚠️ Warning</strong><br><br>
-                Uploading content you don't own violates Ghana copyright law and may result in fines up to GHS 10,000, imprisonment, and permanent ban from Nutifa.
+                Uploading content you don't own violates Ghana copyright law and may result in fines up to GHS 10,000, imprisonment, and permanent ban from Hajilala.
             </div>
         </div>
         
         <footer>
-            <p>© 2026 <span>Nutifa</span> — Peace & Harmony 🎵 Made in Ghana</p>
+            <p>© 2026 <span>Hajilala</span> — Peace & Harmony 🎵 Made in Ghana</p>
         </footer>
     </body>
     </html>

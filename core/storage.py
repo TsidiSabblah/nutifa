@@ -6,7 +6,7 @@ load_dotenv()
 
 B2_KEY_ID = os.getenv('B2_KEY_ID')
 B2_APPLICATION_KEY = os.getenv('B2_APPLICATION_KEY')
-B2_BUCKET_NAME = os.getenv('B2_BUCKET_NAME', 'nutifa-music')
+B2_BUCKET_NAME = os.getenv('B2_BUCKET_NAME', 'hajilala-music')
 
 def get_b2_api():
     """Initialize B2 API connection"""

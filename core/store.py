@@ -424,14 +424,14 @@ def store():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Nutifa — Ghana's Music Marketplace</title>
+        <title>Hajilala — Ghana's Music Marketplace</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
 
     <!-- NAV -->
     <nav>
-        <a href="/" class="logo">NUTIFA.</a>
+        <a href="/" class="logo">HAJILALA.</a>
         <div class="nav-links">
             <a href="/store">Store</a>
             <a href="/store?cat=beats">Beats</a>
@@ -454,7 +454,7 @@ def store():
 
     <!-- HERO -->
     <div class="hero">
-        <h1>NUTIFA.</h1>
+        <h1>HAJILALA.</h1>
         <p>🎵 Ghana's Home for Independent Music — Buy, Sell & Support Local Artists</p>
         <div class="hero-btns">
             <a href="/signup?role=artist" class="btn btn-gold">🎤 Sell Your Music</a>
@@ -603,7 +603,7 @@ def store():
     </div>
 
     <footer>
-        <p>© 2026 <span>Nutifa</span> — Peace & Harmony 🎵 Made in Ghana</p>
+        <p>© 2026 <span>Hajilala</span> — Peace & Harmony 🎵 Made in Ghana</p>
     </footer>
 
     </body>

@@ -160,9 +160,9 @@ def home():
     conn.close()
 
     return render_template_string(ADMIN_STYLE + """
-    <!DOCTYPE html><html><head><title>Admin — Nutifa</title></head><body>
+    <!DOCTYPE html><html><head><title>Admin — Hajilala</title></head><body>
     <nav>
-        <a href="/" class="logo">NUTIFA.</a>
+        <a href="/" class="logo">HAJILALA.</a>
         <div class="nav-links">
             <a href="/store">Store</a>
             <span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span>
@@ -201,7 +201,7 @@ def home():
         </div>
         <div class="main">
             <div class="page-title">Admin Overview 📊</div>
-            <div class="page-sub">Nutifa platform at a glance</div>
+            <div class="page-sub">Hajilala platform at a glance</div>
 
             <div class="stats-row">
                 <div class="stat-card">
@@ -312,8 +312,8 @@ def artists():
     conn.close()
 
     return render_template_string(ADMIN_STYLE + """
-    <!DOCTYPE html><html><head><title>Artists — Nutifa Admin</title></head><body>
-    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
+    <!DOCTYPE html><html><head><title>Artists — Hajilala Admin</title></head><body>
+    <nav><a href="/" class="logo">HAJILALA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -329,7 +329,7 @@ def artists():
         </div>
         <div class="main">
             <div class="page-title">Artists 🎤</div>
-            <div class="page-sub">Approve and manage artists on Nutifa</div>
+            <div class="page-sub">Approve and manage artists on Hajilala</div>
             <div class="section">
                 {% if all_artists %}
                 <table>
@@ -385,8 +385,8 @@ def users():
     conn.close()
 
     return render_template_string(ADMIN_STYLE + """
-    <!DOCTYPE html><html><head><title>Users — Nutifa Admin</title></head><body>
-    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
+    <!DOCTYPE html><html><head><title>Users — Hajilala Admin</title></head><body>
+    <nav><a href="/" class="logo">HAJILALA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -402,7 +402,7 @@ def users():
         </div>
         <div class="main">
             <div class="page-title">Users 👥</div>
-            <div class="page-sub">All registered users on Nutifa</div>
+            <div class="page-sub">All registered users on Hajilala</div>
             <div class="section">
                 <table>
                     <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Username</th><th>Role</th><th>Status</th><th>Joined</th><th>Action</th></tr></thead>
@@ -453,8 +453,8 @@ def tracks():
     conn.close()
 
     return render_template_string(ADMIN_STYLE + """
-    <!DOCTYPE html><html><head><title>Tracks — Nutifa Admin</title></head><body>
-    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
+    <!DOCTYPE html><html><head><title>Tracks — Hajilala Admin</title></head><body>
+    <nav><a href="/" class="logo">HAJILALA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -470,7 +470,7 @@ def tracks():
         </div>
         <div class="main">
             <div class="page-title">All Tracks 🎵</div>
-            <div class="page-sub">Every track uploaded on Nutifa</div>
+            <div class="page-sub">Every track uploaded on Hajilala</div>
             <div class="section">
                 {% if all_tracks %}
                 <table>
@@ -514,8 +514,8 @@ def settings():
     conn.close()
 
     return render_template_string(ADMIN_STYLE + """
-    <!DOCTYPE html><html><head><title>Settings — Nutifa Admin</title></head><body>
-    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
+    <!DOCTYPE html><html><head><title>Settings — Hajilala Admin</title></head><body>
+    <nav><a href="/" class="logo">HAJILALA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -531,11 +531,11 @@ def settings():
         </div>
         <div class="main">
             <div class="page-title">Platform Settings ⚙️</div>
-            <div class="page-sub">Configure your Nutifa marketplace</div>
+            <div class="page-sub">Configure your Hajilala marketplace</div>
             {% if success %}<div class="flash success">✅ {{ success }}</div>{% endif %}
             <div class="section">
                 <form method="POST">
-                    <div class="form-group"><label>Platform Name</label><input type="text" name="platform_name" value="{{ settings.get('platform_name','Nutifa') }}"></div>
+                    <div class="form-group"><label>Platform Name</label><input type="text" name="platform_name" value="{{ settings.get('platform_name','Hajilala') }}"></div>
                     <div class="form-group"><label>Platform Cut % (your earnings per sale)</label><input type="number" name="platform_cut_pct" min="0" max="50" value="{{ settings.get('platform_cut_pct','15') }}"></div>
                     <div class="form-group"><label>Default Currency</label><select name="currency_default"><option {% if settings.get('currency_default')=='GHS' %}selected{% endif %}>GHS</option><option {% if settings.get('currency_default')=='USD' %}selected{% endif %}>USD</option><option {% if settings.get('currency_default')=='GBP' %}selected{% endif %}>GBP</option></select></div>
                     <button type="submit" class="btn btn-gold">Save Settings</button>
@@ -562,8 +562,8 @@ def orders():
     conn.close()
 
     return render_template_string(ADMIN_STYLE + """
-    <!DOCTYPE html><html><head><title>Orders — Nutifa Admin</title></head><body>
-    <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
+    <!DOCTYPE html><html><head><title>Orders — Hajilala Admin</title></head><body>
+    <nav><a href="/" class="logo">HAJILALA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
     <div class="layout">
         <div class="sidebar">
             <div class="sidebar-section">Main</div>
@@ -579,7 +579,7 @@ def orders():
         </div>
         <div class="main">
             <div class="page-title">All Orders 💰</div>
-            <div class="page-sub">Every sale made on Nutifa</div>
+            <div class="page-sub">Every sale made on Hajilala</div>
             <div class="section">
                 {% if all_orders %}
                 <table>
@@ -635,10 +635,10 @@ def payouts():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Payouts — Nutifa Admin</title>
+        <title>Payouts — Hajilala Admin</title>
     </head>
     <body>
-        <nav><a href="/" class="logo">NUTIFA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
+        <nav><a href="/" class="logo">HAJILALA.</a><div class="nav-links"><span style="color:#e84747;font-size:0.8rem;font-weight:700">⚡ ADMIN</span><a href="/logout" class="btn btn-outline">Log Out</a></div></nav>
         <div class="layout">
             <div class="sidebar">
                 <div class="sidebar-section">Main</div>

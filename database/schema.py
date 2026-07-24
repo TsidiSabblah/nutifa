@@ -3,9 +3,9 @@ import os
 
 # Use a writable directory on Render
 if os.environ.get('RENDER'):
-    DB_PATH = '/tmp/nutifa.db'
+    DB_PATH = '/tmp/hajilala.db'
 else:
-    DB_PATH = os.path.join(os.path.dirname(__file__), "nutifa.db")
+    DB_PATH = os.path.join(os.path.dirname(__file__), "hajilala.db")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -193,7 +193,7 @@ def init_db():
 
     # Default settings
     defaults = {
-        "platform_name":      "Nutifa",
+        "platform_name":      "Hajilala",
         "platform_cut_pct":   "15",
         "currency_default":   "GHS",
         "paystack_enabled":   "1",
@@ -214,7 +214,7 @@ def seed_admin(email, username, password):
     try:
         conn.execute("""
             INSERT INTO users (email, username, password_hash, role, full_name)
-            VALUES (?, ?, ?, 'admin', 'Nutifa Admin')
+            VALUES (?, ?, ?, 'admin', 'Hajilala Admin')
         """, (email, username, generate_password_hash(password)))
         conn.commit()
         print(f"Admin created: {email}")
@@ -225,5 +225,5 @@ def seed_admin(email, username, password):
 
 if __name__ == "__main__":
     init_db()
-    seed_admin("admin@nutifa.music", "admin", "changeme123")
-    print("Nutifa database ready!")
+    seed_admin("admin@hajilala.music", "admin", "changeme123")
+    print("Hajilala database ready!")

@@ -196,9 +196,9 @@ def dashboard():
     conn.close()
 
     html_content = DASH_STYLE + """
-    <!DOCTYPE html><html><head><title>Dashboard — Nutifa</title></head><body>
+    <!DOCTYPE html><html><head><title>Dashboard — Hajilala</title></head><body>
     <nav>
-        <a href="/" class="logo">NUTIFA.</a>
+        <a href="/" class="logo">HAJILALA.</a>
         <div class="nav-links">
             <a href="/store">Store</a>
             <a href="/artist/dashboard">Dashboard</a>
@@ -221,7 +221,7 @@ def dashboard():
             <div class="page-sub">Here's how your music is performing</div>"""
     
     if not profile['is_verified']:
-        html_content += '<div class="flash">⏳ Your artist account is pending approval from Nutifa admin. You can upload music but it won\'t be visible until approved.</div>'
+        html_content += '<div class="flash">⏳ Your artist account is pending approval from Hajilala admin. You can upload music but it won\'t be visible until approved.</div>'
     
     html_content += """
             <div class="stats-row">
@@ -354,9 +354,9 @@ def upload():
                 error = f"Upload failed: {e}"
 
     html_content = DASH_STYLE + """
-    <!DOCTYPE html><html><head><title>Upload — Nutifa</title></head><body>
+    <!DOCTYPE html><html><head><title>Upload — Hajilala</title></head><body>
     <nav>
-        <a href="/" class="logo">NUTIFA.</a>
+        <a href="/" class="logo">HAJILALA.</a>
         <div class="nav-links">
             <a href="/store">Store</a>
             <a href="/artist/dashboard">Dashboard</a>
@@ -451,9 +451,9 @@ def tracks():
     conn.close()
 
     html_content = DASH_STYLE + """
-    <!DOCTYPE html><html><head><title>My Tracks — Nutifa</title></head><body>
+    <!DOCTYPE html><html><head><title>My Tracks — Hajilala</title></head><body>
     <nav>
-        <a href="/" class="logo">NUTIFA.</a>
+        <a href="/" class="logo">HAJILALA.</a>
         <div class="nav-links">
             <a href="/store">Store</a>
             <a href="/artist/dashboard">Dashboard</a>
@@ -559,12 +559,12 @@ def request_payout():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Request Payout — Nutifa</title>
+        <title>Request Payout — Hajilala</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body>
         <nav>
-            <a href="/" class="logo">NUTIFA.</a>
+            <a href="/" class="logo">HAJILALA.</a>
             <div class="nav-links">
                 <a href="/store">Store</a>
                 <a href="/artist/dashboard">Dashboard</a>
@@ -667,8 +667,8 @@ def setup():
             return redirect('/artist/dashboard')
 
     html_content = DASH_STYLE + """
-    <!DOCTYPE html><html><head><title>Artist Setup — Nutifa</title></head><body>
-    <nav><a href="/" class="logo">NUTIFA.</a></nav>
+    <!DOCTYPE html><html><head><title>Artist Setup — Hajilala</title></head><body>
+    <nav><a href="/" class="logo">HAJILALA.</a></nav>
     <div style="display:flex;align-items:center;justify-content:center;min-height:80vh">
         <div style="background:#141414;border:1px solid #1e1e1e;border-radius:16px;padding:40px;width:100%;max-width:420px">
             <h2 style="color:#e8c547;margin-bottom:8px">Complete Artist Profile 🎤</h2>

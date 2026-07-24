@@ -209,7 +209,7 @@ def signup():
 
     return render_template_string(AUTH_STYLE + """
     <div class="card">
-        <div class="logo">NUTIFA<span>.</span></div>
+        <div class="logo">HAJILALA<span>.</span></div>
         <div class="tagline">🎵 Peace & Harmony — Ghana's Music Marketplace</div>
         <h2>Create Account</h2>
 
@@ -279,7 +279,61 @@ def signup():
     </script>
     """, error=error, success=success, role=role)
 
+@auth_bp.route("/signup", methods=["GET", "POST"])
+def signup():
+    error = ""
+    success = ""
+    role = request.args.get("role", "fan")
 
+    if request.method == "POST":
+        role       = request.form.get("role", "fan")
+        email      = request.form.get("email", "").strip().lower()
+        username   = request.form.get("username", "").strip()
+        full_name  = request.form.get("full_name", "").strip()
+        password   = request.form.get("password", "")
+        confirm    = request.form.get("confirm", "")
+        phone      = request.form.get("phone", "").strip()
+        stage_name = request.form.get("stage_name", "").strip()
+        agree_terms = request.form.get("agree_terms")  # Add this line
+
+        if not all([email, username, full_name, password]):
+            error = "Please fill in all required fields."
+        elif password != confirm:
+            error = "Passwords do not match."
+        elif len(password) < 6:
+            error = "Password must be at least 6 characters."
+        elif role == "artist" and not agree_terms:  # Add this block
+            error = "You must agree to the Terms of Reference for Artists to register as an artist."
+        else:
+            conn = get_db()
+            try:
+                conn.execute("""
+                    INSERT INTO users (email, username, password_hash, role, full_name, phone)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (email, username, generate_password_hash(password), role, full_name, phone))
+                conn.commit()
+
+                # If artist, create artist profile
+                if role == "artist":
+                    user = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
+                    conn.execute("""
+                        INSERT INTO artist_profiles (user_id, stage_name)
+                        VALUES (?, ?)
+                    """, (user['id'], stage_name or full_name))
+                    conn.commit()
+
+                success = "Account created! You can now log in."
+            except Exception as e:
+                if "UNIQUE" in str(e):
+                    error = "Email or username already taken."
+                else:
+                    error = f"Error: {e}"
+            finally:
+                conn.close()
+
+    return render_template_string(AUTH_STYLE + """
+    <!-- rest of your template -->
+    """
 # ── Login ──────────────────────────────────────────────────────────────────────
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -309,7 +363,7 @@ def login():
 
     return render_template_string(AUTH_STYLE + """
     <div class="card">
-        <div class="logo">NUTIFA<span>.</span></div>
+        <div class="logo">HAJILALA<span>.</span></div>
         <div class="tagline">🎵 Peace & Harmony — Ghana's Music Marketplace</div>
         <h2>Welcome Back</h2>
 

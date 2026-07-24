@@ -161,12 +161,12 @@ def buy_track(track_id):
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Buy {{ track.title }} — Nutifa</title>
+        <title>Buy {{ track.title }} — Hajilala</title>
         <script src="https://js.paystack.co/v1/inline.js"></script>
     </head>
     <body>
         <div class="payment-card">
-            <div class="logo">NUTIFA.</div>
+            <div class="logo">HAJILALA.</div>
             <div class="item-info">
                 <div class="item-title">{{ track.title }}</div>
                 <div class="item-sub">by {{ track.stage_name }}</div>
@@ -204,7 +204,7 @@ def buy_track(track_id):
                     email: email,
                     amount: {{ track.price * 100 }},
                     currency: 'GHS',
-                    ref: 'NUTIFA-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+                    ref: 'HAJILALA-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
                     callback: function(response) {
                         console.log('Payment successful. Reference:', response.reference);
                         fetch('/payment/verify/' + response.reference, {
@@ -317,11 +317,11 @@ def manual_verify(reference):
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Verify Payment — Nutifa</title>
+        <title>Verify Payment — Hajilala</title>
     </head>
     <body>
         <div class="payment-card">
-            <div class="logo">NUTIFA.</div>
+            <div class="logo">HAJILALA.</div>
             <h2 style="margin-bottom: 20px;">Check Payment Status</h2>
             <p style="color:#aaa; margin-bottom: 20px;">
                 Your transaction reference: <strong>{{ reference }}</strong>
@@ -429,11 +429,11 @@ def download_page(token):
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Download — Nutifa</title>
+        <title>Download — Hajilala</title>
     </head>
     <body>
         <div class="payment-card success-page">
-            <div class="logo">NUTIFA.</div>
+            <div class="logo">HAJILALA.</div>
             <div class="checkmark">✓</div>
             <h2 style="color:#47e860;">Payment Successful!</h2>
             <div class="item-info" style="margin: 20px 0;">
