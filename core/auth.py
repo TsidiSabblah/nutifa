@@ -164,22 +164,24 @@ def signup():
     role = request.args.get("role", "fan")
 
     if request.method == "POST":
-        role       = request.form.get("role") or "fan"
-        email      = (request.form.get("email") or "").strip().lower()
-        username   = (request.form.get("username") or "").strip()
-        full_name  = (request.form.get("full_name") or "").strip()
-        password   = request.form.get("password") or ""
-        confirm    = request.form.get("confirm") or ""
-        phone      = (request.form.get("phone") or "").strip()
-        stage_name = (request.form.get("stage_name") or "").strip()
+        role       = request.form.get("role", "fan")
+        email      = request.form.get("email", "").strip().lower()
+        username   = request.form.get("username", "").strip()
+        full_name  = request.form.get("full_name", "").strip()
+        password   = request.form.get("password", "")
+        confirm    = request.form.get("confirm", "")
+        phone      = request.form.get("phone", "").strip()
+        stage_name = request.form.get("stage_name", "").strip()
+        agree_terms = request.form.get("agree_terms")
 
-        print("FORM DATA:", dict(request.form))
-        if not email or not username or not full_name or not password:
+        if not all([email, username, full_name, password]):
             error = "Please fill in all required fields."
         elif password != confirm:
             error = "Passwords do not match."
         elif len(password) < 6:
             error = "Password must be at least 6 characters."
+        elif role == "artist" and not agree_terms:
+            error = "You must agree to the Terms of Reference for Artists to register as an artist."
         else:
             conn = get_db()
             try:
@@ -189,7 +191,6 @@ def signup():
                 """, (email, username, generate_password_hash(password), role, full_name, phone))
                 conn.commit()
 
-                # If artist, create artist profile
                 if role == "artist":
                     user = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
                     conn.execute("""
@@ -210,7 +211,7 @@ def signup():
     return render_template_string(AUTH_STYLE + """
     <div class="card">
         <div class="logo">HAJILALA<span>.</span></div>
-        <div class="tagline">🎵 Peace & Harmony — Ghana's Music Marketplace</div>
+        <div class="tagline">🎵 Where Music Spirits Rise — Ghana's Music Marketplace</div>
         <h2>Create Account</h2>
 
         {% if error %}<div class="flash">{{ error }}</div>{% endif %}
@@ -261,6 +262,12 @@ def signup():
                 <label>Confirm Password *</label>
                 <input type="password" name="confirm" placeholder="Repeat password" required>
             </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" name="agree_terms" required style="width: auto;">
+                    <span style="color: #aaa; font-size: 0.85rem;">I agree to the <a href="/legal/terms" target="_blank" style="color:#e8c547;">Terms of Reference for Artists</a> and confirm that I own the rights to all content I will upload.</span>
+                </label>
+            </div>
             <button type="submit" class="btn">Create Account</button>
         </form>
 
@@ -279,66 +286,13 @@ def signup():
     </script>
     """, error=error, success=success, role=role)
 
-@auth_bp.route("/signup", methods=["GET", "POST"])
-def signup():
-    error = ""
-    success = ""
-    role = request.args.get("role", "fan")
 
-    if request.method == "POST":
-        role       = request.form.get("role", "fan")
-        email      = request.form.get("email", "").strip().lower()
-        username   = request.form.get("username", "").strip()
-        full_name  = request.form.get("full_name", "").strip()
-        password   = request.form.get("password", "")
-        confirm    = request.form.get("confirm", "")
-        phone      = request.form.get("phone", "").strip()
-        stage_name = request.form.get("stage_name", "").strip()
-        agree_terms = request.form.get("agree_terms")  # Add this line
-
-        if not all([email, username, full_name, password]):
-            error = "Please fill in all required fields."
-        elif password != confirm:
-            error = "Passwords do not match."
-        elif len(password) < 6:
-            error = "Password must be at least 6 characters."
-        elif role == "artist" and not agree_terms:  # Add this block
-            error = "You must agree to the Terms of Reference for Artists to register as an artist."
-        else:
-            conn = get_db()
-            try:
-                conn.execute("""
-                    INSERT INTO users (email, username, password_hash, role, full_name, phone)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (email, username, generate_password_hash(password), role, full_name, phone))
-                conn.commit()
-
-                # If artist, create artist profile
-                if role == "artist":
-                    user = conn.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
-                    conn.execute("""
-                        INSERT INTO artist_profiles (user_id, stage_name)
-                        VALUES (?, ?)
-                    """, (user['id'], stage_name or full_name))
-                    conn.commit()
-
-                success = "Account created! You can now log in."
-            except Exception as e:
-                if "UNIQUE" in str(e):
-                    error = "Email or username already taken."
-                else:
-                    error = f"Error: {e}"
-            finally:
-                conn.close()
-
-    return render_template_string(AUTH_STYLE + """
-    <!-- rest of your template -->
-    """
 # ── Login ──────────────────────────────────────────────────────────────────────
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     error = ""
     success = "Account created successfully! Please log in." if request.args.get('success') else ""
+
     if request.method == "POST":
         email    = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
@@ -364,10 +318,11 @@ def login():
     return render_template_string(AUTH_STYLE + """
     <div class="card">
         <div class="logo">HAJILALA<span>.</span></div>
-        <div class="tagline">🎵 Peace & Harmony — Ghana's Music Marketplace</div>
+        <div class="tagline">🎵 Where Music Spirits Rise — Ghana's Music Marketplace</div>
         <h2>Welcome Back</h2>
 
         {% if error %}<div class="flash">{{ error }}</div>{% endif %}
+        {% if success %}<div class="flash success">{{ success }}</div>{% endif %}
 
         <form method="POST">
             <div class="form-group">
@@ -388,7 +343,7 @@ def login():
             <a href="/signup?role=artist">Join as an Artist 🎤</a>
         </div>
     </div>
-    """, error=error)
+    """, error=error, success=success)
 
 
 # ── Logout ─────────────────────────────────────────────────────────────────────
