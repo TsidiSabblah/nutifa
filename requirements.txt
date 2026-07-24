@@ -13,7 +13,6 @@ Jinja2==3.1.6
 joblib==1.5.3
 logfury==1.0.1
 MarkupSafe==3.0.3
-metatrader5==5.0.5735
 mutagen==1.47.0
 narwhals==2.24.0
 numpy==2.4.6
